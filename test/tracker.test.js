@@ -12,7 +12,6 @@ function makeConfig() {
 		}
 	}
 	cfg.phases.forEach((p, i) => { p.phaseLines = [`Entering phase ${i + 1}`]; });
-	cfg.resetLines = ["Who dares challenge"];
 	cfg.nextPhaseLines = ["You will not defeat us"];
 	return cfg;
 }
@@ -139,11 +138,11 @@ test("matching tolerates case, punctuation and common OCR confusions", () => {
 	assert.ok(t.handleLine("[12:00:01] LADY GHRAZl 3 PRAYERS"));
 });
 
-test("reset line starts a new fight", () => {
+test("Lady's new-kill line starts a new fight", () => {
 	const t = makeTracker();
 	useStep(t, "3 Prayers", "3 Prayers");
 	t.setPhase(4);
-	t.handleLine("Lady Ghrazi: Who dares challenge us?");
+	t.handleLine("Lady Karmina Ghrazi: Just give in. Join us.");
 	assert.strictEqual(t.phase, 0);
 	assert.strictEqual(t.nextSpecial, 0);
 });

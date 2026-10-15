@@ -6,6 +6,7 @@ An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbo
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
+- When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
 
 | Phase | Order (Lady + Lord) |
 | --- | --- |
@@ -38,7 +39,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 
 All boss data is in [`config.js`](config.js).
 
-- `specialLines`: what each boss yells for each special. Fill these in once; they're used in every phase. If Lady and Lord say similar things, include the speaker's name (e.g. `"Lady Ghrazi: ..."`) so a line can only match one of them.
+- `specialLines`: what each boss yells for each special. Fill these in once; they're used in every phase. Leave the speaker's name out: it's drawn in a dark colour that's harder for Alt1 to read than the message.
 - `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs.
 
 Also fill in each phase's `phaseLines`: what is yelled when the fight enters that phase. If the same thing is said at every phase change, put it in `nextPhaseLines` instead.

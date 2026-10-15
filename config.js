@@ -5,9 +5,11 @@
  *
  * Chat-line matching rules:
  *  - Matching is case-insensitive and ignores timestamps, punctuation and spaces,
- *    so "[12:34:56] Lady Ghrazi: You cannot escape!" matches "You cannot escape".
+ *    so "[12:34:56] Lady Karmina Ghrazi: You cannot escape!" matches "You cannot escape".
  *  - A pattern only needs to be a recognisable part of the line, it doesn't have
  *    to be the whole line. Use a chunk that is unique to that line.
+ *  - Leave the speaker's name out of patterns: it's drawn in a dark colour that is
+ *    harder for Alt1 to read than the message itself.
  *  - Every list below can hold several patterns (e.g. if a boss has more than one
  *    line for the same attack).
  */
@@ -38,8 +40,10 @@ var BOSS_CONFIG = {
 		},
 	},
 
-	// Optional: lines that mean a brand new fight has started (back to Phase 1, special 1).
-	resetLines: [],
+	// Lines that mean a new kill has started (back to Phase 1, first special).
+	resetLines: [
+		"Just give in. Join us", // Lady Karmina Ghrazi
+	],
 
 	// Optional: generic lines that mean "the fight moved to the next phase".
 	// Use this if the same thing is said at every phase change.
@@ -114,7 +118,10 @@ var BOSS_CONFIG = {
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.
-	extraChatColors: [],
+	extraChatColors: [
+		[148, 245, 147], // boss dialogue text (light green)
+		[127, 19, 55], // "Lady Karmina Ghrazi" speaker name (dark magenta)
+	],
 
 	// The same phase/reset trigger is ignored if it shows up again within this many
 	// milliseconds (guards against the chat reader seeing one line twice).
