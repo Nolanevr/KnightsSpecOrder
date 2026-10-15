@@ -37,6 +37,16 @@ test("the real first-special lines advance phase 1 once", () => {
 	assert.strictEqual(t.nextSpecial, 1);
 });
 
+test("Lady's Dash line and Lord's partly-read line move phase 1 along", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.handleLine("[21:27:04] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	t.handleLine("[21:27:04] . ord Vasily '  hrazi: FALL IN LINE!");
+	time += 15000;
+	assert.ok(t.handleLine("[21:27:19] Lady Karmina Ghrazi: Nowhere is beyond"));
+	assert.strictEqual(t.nextSpecial, 2);
+});
+
 test("starts at phase 1 with the first special next", () => {
 	const t = makeTracker();
 	assert.strictEqual(t.phase, 0);

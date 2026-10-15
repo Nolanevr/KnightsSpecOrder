@@ -99,6 +99,8 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 #tools label { display: block; margin: 3px 0; }
 #simulate { display: flex; gap: 4px; margin: 3px 0; }
 #simulate input { flex: 1; min-width: 0; }
+#log-buttons { display: flex; gap: 4px; margin: 3px 0; }
+#log-buttons button { flex: 1; font-size: 11px; }
 #log { list-style: none; margin: 0; padding: 0; max-height: 120px; overflow-y: auto; user-select: text; }
 #log li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #log li.hit { color: #7ee07a; }
