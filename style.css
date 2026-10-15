@@ -51,15 +51,22 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 #phase-row {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	gap: 4px;
 }
 #phase-name {
-	font: 20px Georgia, "Times New Roman", serif;
+	flex: 1;
+	text-align: center;
+	font: 18px/1.15 Georgia, "Times New Roman", serif;
 	text-shadow: 1px 1px 0 #000;
 }
 #phase-row button { padding: 0 6px; font-size: 10px; }
 
-#specials { margin: 3px 0 5px; }
+#specials { margin: 2px 0 4px; }
+
+/* Compact view: just the phase and the specials. */
+body.compact #controls, body.compact #status, body.compact #tools { display: none; }
+body.compact #panel { padding-bottom: 3px; }
+body.compact #specials { margin-bottom: 0; }
 
 .step-head, .step {
 	display: grid;
@@ -74,7 +81,7 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 }
 .step {
 	margin-top: 2px;
-	padding: 2px 6px;
+	padding: 1px 6px;
 	border: 1px solid var(--box-border);
 	background: linear-gradient(var(--box-top), var(--box-bottom) 45%, var(--box-bottom) 85%, #1e1309);
 	text-shadow: 1px 1px 0 #000;

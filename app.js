@@ -195,6 +195,14 @@
 		}, cfg.readIntervalMs);
 	}
 
+	// Compact view, remembered between sessions.
+	function setCompact(on) {
+		document.body.classList.toggle("compact", on);
+		try { localStorage.setItem("kso.compact", on ? "1" : "0"); } catch (e) { }
+	}
+	try { setCompact(localStorage.getItem("kso.compact") == "1"); } catch (e) { }
+	el("btn-compact").onclick = function () { setCompact(!document.body.classList.contains("compact")); };
+
 	el("phase-prev").onclick = function () { tracker.previousPhase(); render(); };
 	el("phase-next").onclick = function () { tracker.nextPhase(); render(); };
 	el("btn-reset").onclick = function () { tracker.reset(); render(); };

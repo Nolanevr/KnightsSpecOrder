@@ -7,7 +7,7 @@
 	"defaultWidth": 320,
 	"defaultHeight": 260,
 	"minWidth": 260,
-	"minHeight": 160,
+	"minHeight": 90,
 	"maxWidth": 800,
 	"maxHeight": 600,
 	"permissions": "pixel,overlay"
