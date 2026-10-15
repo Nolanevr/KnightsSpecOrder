@@ -83,6 +83,47 @@ test("PRAISE THE SANGUINE moves to phase 2 and the order carries on", () => {
 	assert.strictEqual(t.nextSpecial, 0);
 });
 
+test("the shared prayer lines count as 5 Prayers in phases 4 and 5", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(3);
+	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Your blood becomes tribute!");
+	assert.strictEqual(t.nextSpecial, 1);
+	time += 15000;
+	assert.match(t.handleLine("[22:00:15] Lady Karmina Ghrazi: SUFFER UNTO ME!"), /5 Prayers/);
+	assert.match(t.handleLine("[22:00:15] . ord Vasily '  hrazi: FALL IN LINE!"), /same step/);
+	assert.strictEqual(t.nextSpecial, 2);
+	time += 30000;
+	t.handleLine("[22:00:45] Lady Karmina Ghrazi: Your blood becomes tribute!");
+	time += 15000;
+	t.handleLine("[22:01:00] . ord Vasily '  hrazi: FALL IN LINE!");
+	assert.strictEqual(t.nextSpecial, 5);
+});
+
+test("Blood Diamond only counts in phase 3", () => {
+	const t = new SpecTracker(shippedConfig);
+	assert.strictEqual(t.handleLine("[22:00:00] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"), null);
+	t.setPhase(2);
+	assert.ok(t.handleLine("[22:00:05] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"));
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("one boss's line on its own is enough, whichever boss it is", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.handleLine("[22:00:00] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.strictEqual(t.nextSpecial, 1);
+	time += 15000;
+	t.handleLine("[22:00:15] . ord Vasily '  hrazi: Drown in Blood!");
+	assert.strictEqual(t.nextSpecial, 2);
+	time += 15000;
+	t.handleLine("[22:00:30] Lady Karmina Ghrazi: Your blood becomes tribute!");
+	assert.strictEqual(t.nextSpecial, 0);
+	time += 15000;
+	t.handleLine("[22:00:45] . ord Vasily '  hrazi: FALL IN LINE!");
+	assert.strictEqual(t.nextSpecial, 1);
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");

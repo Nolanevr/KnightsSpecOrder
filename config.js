@@ -26,17 +26,17 @@ var BOSS_CONFIG = {
 	specialLines: {
 		lady: {
 			"3 Prayers": ["SUFFER UNTO ME"],
-			"5 Prayers": [],
+			"5 Prayers": ["SUFFER UNTO ME"], // same line as 3 Prayers
 			"Dash": ["Nowhere is beyond"],
 			"Magic Bleed": ["Your blood becomes"],
 		},
 		lord: {
 			"3 Prayers": ["FALL IN LINE"],
-			"5 Prayers": [],
+			"5 Prayers": ["FALL IN LINE"], // same line as 3 Prayers
 			"Blood Waves": ["Drown in Blood"],
 			"Meatball": ["BEAR THE CRIMSON"],
 			"Mind Flay": ["Your mind betrays you"],
-			"Blood Diamond": [],
+			"Blood Diamond": ["LET THE SANGUINE ENGULF YOU"],
 			"Blue Bar": [],
 		},
 	},

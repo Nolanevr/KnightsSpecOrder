@@ -120,18 +120,19 @@
 		return true;
 	};
 
-	// Which boss special a line is, as { boss, bossIndex, special }, or null.
-	SpecTracker.prototype.matchSpecial = function (line) {
-		var bosses = this.config.bosses;
+	// Every boss special a line could be, as [{ boss, bossIndex, special }]. Some specials
+	// share a chat line (3 Prayers and 5 Prayers), so a line can match more than one.
+	SpecTracker.prototype.matchSpecials = function (line) {
+		var bosses = this.config.bosses, matches = [];
 		for (var b = 0; b < bosses.length; b++) {
 			var lines = this.config.specialLines[bosses[b].id] || {};
 			for (var special in lines) {
 				if (matchesAny(line, lines[special])) {
-					return { boss: bosses[b], bossIndex: b, special: special };
+					matches.push({ boss: bosses[b], bossIndex: b, special: special });
 				}
 			}
 		}
-		return null;
+		return matches;
 	};
 
 	// Feed a chat line. Returns a short description of what happened, or null if
@@ -162,28 +163,39 @@
 			return "Entered " + this.currentPhase().name;
 		}
 
-		var match = this.matchSpecial(line);
-		if (!match) { return null; }
+		var matches = this.matchSpecials(line);
+		if (!matches.length) { return null; }
 		var rotation = this.rotation();
-		var label = match.boss.name + ": " + match.special;
-		if (time != null && !this.isNew(time, "special:" + match.boss.id + ":" + match.special)) { return null; }
+		var inStep = function (s) {
+			for (var m = 0; m < matches.length; m++) {
+				if (rotation[s][matches[m].bossIndex] == matches[m].special) { return matches[m]; }
+			}
+			return null;
+		};
 
 		// The other boss's half of the step that was just used (or the same line read twice).
-		var last = this.lastUsed;
-		if (last && this.now() - last.time < (cfg.pairWindowMs || 0)
-			&& rotation[last.index][match.bossIndex] == match.special) {
-			return label + " (same step)";
+		var step = -1, match = null, last = this.lastUsed;
+		if (last && this.now() - last.time < (cfg.pairWindowMs || 0)) {
+			match = inStep(last.index);
 		}
-
+		var paired = !!match;
 		// Otherwise it's the first step from the predicted one that has this special.
-		for (var i = 0; i < rotation.length; i++) {
-			var s = (this.nextSpecial + i) % rotation.length;
-			if (rotation[s][match.bossIndex] == match.special) {
-				this.specialUsed(s);
-				return label;
+		if (paired) {
+			step = last.index;
+		} else {
+			for (var i = 0; i < rotation.length && !match; i++) {
+				step = (this.nextSpecial + i) % rotation.length;
+				match = inStep(step);
 			}
 		}
-		return null;
+		// Not one of this phase's specials.
+		if (!match) { return null; }
+
+		var label = match.boss.name + ": " + match.special;
+		if (time != null && !this.isNew(time, "special:" + match.boss.id + ":" + match.special)) { return null; }
+		if (paired) { return label + " (same step)"; }
+		this.specialUsed(step);
+		return label;
 	};
 
 	SpecTracker.normalize = normalize;
