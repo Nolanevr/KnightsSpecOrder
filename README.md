@@ -31,6 +31,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 ## Using it
 
 - Keep the chatbox where the boss's lines appear visible. When the app finds the chatbox it briefly outlines it in green.
+- **Show: Both / Lady / Lord** shows both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with. The app remembers your choice.
 - **☰** switches to a compact view with just the phase and the specials (hides the buttons, status line and Tools). Click it again to bring them back; the app remembers your choice.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
 - **Tools** (at the bottom):

@@ -76,6 +76,8 @@ var BOSS_CONFIG = {
 		{
 			// Only one of the two bosses is attacking here; either one's line advances the order.
 			name: "Phase 3",
+			// It's random which boss you end up with, so show both even in a one-boss view.
+			alwaysShowBoth: true,
 			phaseLines: [],
 			rotation: [
 				["3 Prayers", "3 Prayers"],

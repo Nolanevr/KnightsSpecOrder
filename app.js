@@ -22,15 +22,23 @@
 	var MARKER_LOST_READS = 8; // forget the marker after this many failed reads in a row
 	var phaseFont = null;
 	var marker = { pos: null, misses: 0, lastPhase: null, lastSearch: 0, activeUntil: 0 };
+	var view = "both";
 
 	function render() {
 		var phase = tracker.currentPhase();
 		el("phase-name").textContent = phase.name;
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
+		// Which bosses' columns to show: all, or just the one picked with the Show button.
+		var shown = cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
+			return view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == view;
+		});
+		var columns = "repeat(" + shown.length + ", 1fr)";
 		var head = document.createElement("div");
 		head.className = "step-head";
-		cfg.bosses.forEach(function (boss) {
+		head.style.gridTemplateColumns = columns;
+		shown.forEach(function (b) {
+			var boss = cfg.bosses[b];
 			var name = document.createElement("span");
 			name.textContent = boss.name;
 			name.style.color = boss.color;
@@ -41,9 +49,10 @@
 			var row = document.createElement("div");
 			row.className = "step" + (i == tracker.nextSpecial ? " next" : "");
 			row.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
-			step.forEach(function (special) {
+			row.style.gridTemplateColumns = columns;
+			shown.forEach(function (b) {
 				var cell = document.createElement("span");
-				cell.textContent = special;
+				cell.textContent = step[b];
 				row.appendChild(cell);
 			});
 			row.onclick = function () { tracker.setNextSpecial(i); render(); };
@@ -195,6 +204,18 @@
 		}, cfg.readIntervalMs);
 	}
 
+	// Show both bosses or just one, remembered between sessions.
+	var views = ["both"].concat(cfg.bosses.map(function (boss) { return boss.id; }));
+	function setView(v) {
+		view = views.indexOf(v) == -1 ? "both" : v;
+		var boss = cfg.bosses.filter(function (b) { return b.id == view; })[0];
+		el("btn-view").textContent = "Show: " + (boss ? boss.name.split(" ")[0] : "Both");
+		try { localStorage.setItem("kso.view", view); } catch (e) { }
+		render();
+	}
+	el("btn-view").onclick = function () { setView(views[(views.indexOf(view) + 1) % views.length]); };
+	try { view = localStorage.getItem("kso.view") || "both"; } catch (e) { }
+
 	// Compact view, remembered between sessions.
 	function setCompact(on) {
 		document.body.classList.toggle("compact", on);
@@ -256,6 +277,6 @@
 		}
 	}, 500);
 
-	render();
+	setView(view);
 	start();
 })();
