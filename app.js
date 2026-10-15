@@ -55,7 +55,8 @@
 		var steps = tracker.rotation();
 		var layout = steps.length > ROWS ? settings.layout : "standard";
 		var blocks = layout == "side" ? Math.ceil(steps.length / ROWS) : 1;
-		var dense = blocks > 1 && shown.length > 1;
+		// Side by side: narrower boxes, so smaller text.
+		var dense = blocks > 1;
 		specialsEl.classList.toggle("half", layout == "ultra");
 		specialsEl.classList.toggle("dense", dense);
 		specialsEl.style.gridTemplateColumns = "repeat(" + blocks + ", minmax(0, 1fr))";
@@ -72,7 +73,7 @@
 			shown.forEach(function (b) {
 				var boss = cfg.bosses[b];
 				var name = document.createElement("span");
-				name.textContent = bossName(boss, dense);
+				name.textContent = bossName(boss, dense && shown.length > 1);
 				name.style.color = boss.color;
 				head.appendChild(name);
 			});
@@ -87,7 +88,23 @@
 			box.style.gridRow = String(blocks > 1 ? i % ROWS + 2 : i + 2);
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
-				cell.textContent = displayName(cfg.bosses[b].id, step[b]);
+				cell.className = "cell";
+				var own = document.createElement("span");
+				own.textContent = displayName(cfg.bosses[b].id, step[b]);
+				cell.appendChild(own);
+				// With one boss shown, add the other boss's specials that matter to this boss's
+				// tank, in the other boss's colour.
+				if (shown.length == 1) {
+					cfg.bosses.forEach(function (other, o) {
+						if (o != b && (cfg.bosses[b].alsoShow || []).indexOf(step[o]) != -1) {
+							var extra = document.createElement("span");
+							extra.className = "extra";
+							extra.textContent = displayName(other.id, step[o]);
+							extra.style.color = other.color;
+							cell.appendChild(extra);
+						}
+					});
+				}
 				box.appendChild(cell);
 			});
 			box.onclick = function () { tracker.setNextSpecial(i); render(); };

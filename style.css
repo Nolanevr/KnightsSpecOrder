@@ -66,7 +66,7 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 	column-gap: 4px;
 	margin: 2px 0 4px;
 }
-/* Both bosses side by side in a 6-step phase: four columns, so smaller text. */
+/* Side by side in a 6-step phase: narrower boxes, so smaller text. */
 #specials.dense { column-gap: 3px; }
 #specials.dense .step, #specials.dense .step-head { font-size: 11px; column-gap: 2px; padding-left: 3px; padding-right: 2px; }
 #specials.dense .step.next { font-weight: normal; }
@@ -150,6 +150,9 @@ body.compact #specials { margin-bottom: 0; }
 	cursor: pointer;
 }
 .step span { overflow: hidden; text-overflow: ellipsis; }
+.step .cell { display: flex; gap: 6px; min-width: 0; }
+.step .cell > span:first-child { flex: 0 1 auto; min-width: 0; }
+.step .cell .extra { flex: 0 1 auto; min-width: 0; margin-left: auto; }
 /* 6-step phases: half-height rows, so six take the space of three (6 x 11.5px = 3 x 23px). */
 #specials.half .step { margin-top: 1px; padding: 0 6px; line-height: 8.5px; font-size: 10px; }
 .step.next {

@@ -17,7 +17,9 @@ var BOSS_CONFIG = {
 	// The two bosses, in the order used by the `rotation` pairs below.
 	// In game they are "Lady Karmina Ghrazi" and "Lord Vasily Ghrazi".
 	bosses: [
-		{ id: "lady", name: "Lady Ghrazi", color: "#ff4a4a" }, // melee
+		// alsoShow: the other boss's specials that also matter to this boss's tank, shown
+		// next to this boss's special when only this boss is shown.
+		{ id: "lady", name: "Lady Ghrazi", color: "#ff4a4a", alsoShow: ["Meatball", "Blue Bar"] }, // melee
 		{ id: "lord", name: "Lord Ghrazi", color: "#4a9bff" }, // magic
 	],
 
