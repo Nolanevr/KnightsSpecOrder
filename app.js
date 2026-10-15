@@ -69,6 +69,7 @@
 
 	function createReader() {
 		reader = new Chatbox.default();
+		addSkipUnreadableRule(reader);
 		cfg.extraChatColors.forEach(function (c) {
 			reader.readargs.colors.push(A1lib.mixColor(c[0], c[1], c[2]));
 		});

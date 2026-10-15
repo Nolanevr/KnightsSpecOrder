@@ -27,7 +27,7 @@ var BOSS_CONFIG = {
 		lady: {
 			"3 Prayers": ["SUFFER UNTO ME"],
 			"5 Prayers": [],
-			"Dash": [],
+			"Dash": ["Nowhere is beyond"],
 			"Magic Bleed": [],
 		},
 		lord: {
