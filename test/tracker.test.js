@@ -141,12 +141,12 @@ test("the silent Blue Bar step is assumed used when its time passes (Lord's tank
 	t.setNextSpecial(5);
 	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 6
 	assert.strictEqual(t.nextSpecial, 0); // step 1: Magic Bleed + Blue Bar, no line for Lord's tank
-	time += 17000;
+	time += 13000; // Blue Bar is 20 ticks (12s) after the previous special
 	assert.strictEqual(t.tick(), null);
-	time += 2000;
+	time += 1000;
 	assert.match(t.tick(), /Step 1/);
 	assert.strictEqual(t.nextSpecial, 1);
-	time += 11000;
+	time += 15000;
 	t.handleLine("[22:00:30] . ord Vasily '  hrazi: FALL IN LINE!"); // step 2
 	assert.strictEqual(t.nextSpecial, 2);
 });
@@ -157,8 +157,8 @@ test("Lady's line for the Blue Bar step still counts once for her tank", () => {
 	t.setPhase(4);
 	t.setNextSpecial(2);
 	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!"); // step 3
-	time += 15000;
-	t.handleLine("[22:00:15] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 4
+	time += 12000;
+	t.handleLine("[22:00:12] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 4
 	assert.strictEqual(t.nextSpecial, 4);
 	time += 20000;
 	assert.strictEqual(t.tick(), null); // step 5 has lines, so no guessing
@@ -171,11 +171,11 @@ test("a silent step whose line arrives just after the guess isn't counted twice"
 	t.setPhase(4);
 	t.setNextSpecial(2);
 	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
-	time += 18500;
+	time += 14000;
 	assert.ok(t.tick()); // step 4 (Magic Bleed + Blue Bar) assumed
 	assert.strictEqual(t.nextSpecial, 4);
 	time += 500;
-	assert.match(t.handleLine("[22:00:19] Lady Karmina Ghrazi: Your blood becomes tribute!"), /same step/);
+	assert.match(t.handleLine("[22:00:14] Lady Karmina Ghrazi: Your blood becomes tribute!"), /same step/);
 	assert.strictEqual(t.nextSpecial, 4);
 });
 

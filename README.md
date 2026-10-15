@@ -6,7 +6,7 @@ An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbo
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
-- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 steps 1 and 4) are silent. Specials come every 15 seconds, so once a silent step's time has passed (18 seconds after the last special) the app assumes it happened and moves on.
+- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 steps 1 and 4) are silent. Blue Bar comes 20 game ticks (12 seconds) after the previous special, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
 - When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 

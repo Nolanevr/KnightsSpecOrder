@@ -106,16 +106,16 @@
 		return false;
 	};
 
-	// Call regularly. Specials come at a steady rhythm, so if the next step is a silent
-	// one and its time has passed with no line, assume it happened and move on. Returns a
-	// short description when it does, otherwise null.
+	// Call regularly. A silent step happens a set time after the previous special, so if
+	// the next step is a silent one and its time has passed with no line, assume it
+	// happened and move on. Returns a short description when it does, otherwise null.
 	SpecTracker.prototype.tick = function () {
 		var cfg = this.config, last = this.lastUsed;
-		if (!last || !cfg.specialIntervalMs || !this.isSilentStep(this.nextSpecial)) { return null; }
-		if (this.now() < last.time + cfg.specialIntervalMs + (cfg.silentStepGraceMs || 0)) { return null; }
+		if (!last || !cfg.silentStepDelayMs || !this.isSilentStep(this.nextSpecial)) { return null; }
+		if (this.now() < last.time + cfg.silentStepDelayMs + (cfg.silentStepGraceMs || 0)) { return null; }
 		var index = this.nextSpecial;
 		this.nextSpecial = (index + 1) % this.rotation().length;
-		this.lastUsed = { index: index, time: last.time + cfg.specialIntervalMs };
+		this.lastUsed = { index: index, time: last.time + cfg.silentStepDelayMs };
 		return "Step " + (index + 1) + " (" + this.rotation()[index].join(" + ") + ") has no chat line, assumed used";
 	};
 
