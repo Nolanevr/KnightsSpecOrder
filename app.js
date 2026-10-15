@@ -19,29 +19,26 @@
 		el("phase-name").textContent = phase.name;
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
-		var head = document.createElement("tr");
-		head.appendChild(document.createElement("th"));
+		var head = document.createElement("div");
+		head.className = "step-head";
 		cfg.bosses.forEach(function (boss) {
-			var th = document.createElement("th");
-			th.textContent = boss.name;
-			th.style.color = boss.color;
-			head.appendChild(th);
+			var name = document.createElement("span");
+			name.textContent = boss.name;
+			name.style.color = boss.color;
+			head.appendChild(name);
 		});
 		var rows = [head];
 		tracker.rotation().forEach(function (step, i) {
-			var tr = document.createElement("tr");
-			if (i == tracker.nextSpecial) { tr.className = "next"; }
-			var num = document.createElement("td");
-			num.className = "num";
-			num.textContent = i + 1;
-			tr.appendChild(num);
+			var row = document.createElement("div");
+			row.className = "step" + (i == tracker.nextSpecial ? " next" : "");
+			row.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
 			step.forEach(function (special) {
-				var td = document.createElement("td");
-				td.textContent = special;
-				tr.appendChild(td);
+				var cell = document.createElement("span");
+				cell.textContent = special;
+				row.appendChild(cell);
 			});
-			tr.onclick = function () { tracker.setNextSpecial(i); render(); };
-			rows.push(tr);
+			row.onclick = function () { tracker.setNextSpecial(i); render(); };
+			rows.push(row);
 		});
 		specialsEl.replaceChildren.apply(specialsEl, rows);
 	}
