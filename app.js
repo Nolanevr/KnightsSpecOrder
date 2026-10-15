@@ -23,6 +23,7 @@
 	var phaseFont = null;
 	var marker = { pos: null, misses: 0, lastPhase: null, lastSearch: 0, activeUntil: 0 };
 	var view = "both";
+	var ROWS = 3; // rows of specials shown, whatever the phase
 
 	function render() {
 		var phase = tracker.currentPhase();
@@ -33,32 +34,47 @@
 		var shown = cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
 			return view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == view;
 		});
-		var columns = "repeat(" + shown.length + ", 1fr)";
-		var head = document.createElement("div");
-		head.className = "step-head";
-		head.style.gridTemplateColumns = columns;
-		shown.forEach(function (b) {
-			var boss = cfg.bosses[b];
-			var name = document.createElement("span");
-			name.textContent = boss.name;
-			name.style.color = boss.color;
-			head.appendChild(name);
-		});
-		var rows = [head];
-		tracker.rotation().forEach(function (step, i) {
-			var row = document.createElement("div");
-			row.className = "step" + (i == tracker.nextSpecial ? " next" : "");
-			row.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
-			row.style.gridTemplateColumns = columns;
+		// Always 3 rows, so the window stays the same size: a 6-step phase is shown as two
+		// blocks side by side (steps 1-3 and 4-6).
+		var steps = tracker.rotation();
+		var blocks = Math.ceil(steps.length / ROWS);
+		var dense = blocks > 1 && shown.length > 1;
+		var inner = "repeat(" + shown.length + ", minmax(0, 1fr))";
+		specialsEl.style.gridTemplateColumns = "repeat(" + blocks + ", minmax(0, 1fr))";
+		specialsEl.classList.toggle("dense", dense);
+		var items = [];
+		// One boss: a single name over everything. Both: names over each block.
+		for (var k = 0; k < (shown.length > 1 ? blocks : 1); k++) {
+			var head = document.createElement("div");
+			head.className = "step-head";
+			head.style.gridTemplateColumns = inner;
+			head.style.gridRow = "1";
+			head.style.gridColumn = shown.length > 1 ? String(k + 1) : "1 / -1";
+			shown.forEach(function (b) {
+				var boss = cfg.bosses[b];
+				var name = document.createElement("span");
+				name.textContent = dense ? boss.name.split(" ")[0] : boss.name;
+				name.style.color = boss.color;
+				head.appendChild(name);
+			});
+			items.push(head);
+		}
+		steps.forEach(function (step, i) {
+			var box = document.createElement("div");
+			box.className = "step" + (i == tracker.nextSpecial ? " next" : "");
+			box.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
+			box.style.gridTemplateColumns = inner;
+			box.style.gridColumn = String(Math.floor(i / ROWS) + 1);
+			box.style.gridRow = String(i % ROWS + 2);
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
 				cell.textContent = step[b];
-				row.appendChild(cell);
+				box.appendChild(cell);
 			});
-			row.onclick = function () { tracker.setNextSpecial(i); render(); };
-			rows.push(row);
+			box.onclick = function () { tracker.setNextSpecial(i); render(); };
+			items.push(box);
 		});
-		specialsEl.replaceChildren.apply(specialsEl, rows);
+		specialsEl.replaceChildren.apply(specialsEl, items);
 	}
 
 	function setStatus(text, type) {

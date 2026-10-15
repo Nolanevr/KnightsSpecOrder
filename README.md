@@ -2,6 +2,7 @@
 
 An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbox and shows which special attacks Lady Ghrazi and Lord Ghrazi will use next.
 
+- The specials always take 3 rows, so the window stays the same size in every phase: phases 4 and 5 (6 steps) are shown as two blocks side by side, steps 1–3 and 4–6.
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.

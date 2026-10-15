@@ -61,7 +61,15 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 }
 #phase-row button { padding: 0 6px; font-size: 10px; }
 
-#specials { margin: 2px 0 4px; }
+#specials {
+	display: grid;
+	column-gap: 4px;
+	margin: 2px 0 4px;
+}
+/* Both bosses in a 6-step phase: four columns, so slightly smaller text. */
+#specials.dense { column-gap: 3px; }
+#specials.dense .step, #specials.dense .step-head { font-size: 11px; column-gap: 2px; padding-left: 3px; padding-right: 2px; }
+#specials.dense .step.next { font-weight: normal; }
 
 /* Compact view: just the phase and the specials. */
 body.compact #controls, body.compact #status, body.compact #tools { display: none; }
