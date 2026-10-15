@@ -17,7 +17,7 @@ An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbo
 | 2 | 3 Prayers + 3 Prayers → Dash + Mind Flay → Magic Bleed + Blood Waves |
 | 3 | 3 Prayers + 3 Prayers → Dash + Blood Waves → Magic Bleed + Blood Diamond |
 | 4 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Meatball → 5 Prayers + 5 Prayers → Dash + Blood Waves |
-| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Meatball |
+| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Meatball → Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves |
 
 ## Installing in Alt1
 

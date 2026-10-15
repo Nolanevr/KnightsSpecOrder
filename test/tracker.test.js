@@ -170,7 +170,7 @@ test("a silent step whose line arrives just after the guess isn't counted twice"
 	const t = new SpecTracker(shippedConfig, () => time);
 	t.setPhase(4);
 	t.setNextSpecial(2);
-	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"); // step 3, Dash + Meatball
 	time += 14000;
 	assert.ok(t.tick()); // step 4 (Magic Bleed + Blue Bar) assumed
 	assert.strictEqual(t.nextSpecial, 4);
@@ -327,7 +327,7 @@ test("phase 5 carries on from where phase 4 was", () => {
 	assert.strictEqual(t.nextSpecial, 3);
 	useStep(t, "Magic Bleed", "Blue Bar");
 	useStep(t, "5 Prayers", "5 Prayers");
-	useStep(t, "Dash", "Meatball");
+	useStep(t, "Dash", "Blood Waves");
 	assert.strictEqual(t.nextSpecial, 0);
 });
 

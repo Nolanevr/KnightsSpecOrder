@@ -111,10 +111,10 @@ var BOSS_CONFIG = {
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
-				["Dash", "Blood Waves"],
+				["Dash", "Meatball"],
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
-				["Dash", "Meatball"],
+				["Dash", "Blood Waves"],
 			],
 		},
 	],
