@@ -179,6 +179,36 @@ test("a silent step whose line arrives just after the guess isn't counted twice"
 	assert.strictEqual(t.nextSpecial, 4);
 });
 
+test("phase 4's silent first step is assumed used 22 ticks after the phase starts", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(2);
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: FALL IN LINE!");
+	time += 5000;
+	t.setPhase(3); // marker turns to Phase 4
+	assert.strictEqual(t.nextSpecial, 0);
+	time += 14500; // 22 ticks is 13.2s, plus grace
+	assert.strictEqual(t.tick(), null);
+	time += 600;
+	assert.match(t.tick(), /Step 1/);
+	assert.strictEqual(t.nextSpecial, 1);
+	time += 12000;
+	t.handleLine("[22:00:32] . ord Vasily '  hrazi: FALL IN LINE!"); // step 2, 5 Prayers
+	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("Lady's line at the start of phase 4 beats the timer", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(3);
+	time += 13200;
+	t.handleLine("[22:00:13] Lady Karmina Ghrazi: Your blood becomes tribute!");
+	assert.strictEqual(t.nextSpecial, 1);
+	time += 3000;
+	assert.strictEqual(t.tick(), null);
+	assert.strictEqual(t.nextSpecial, 1);
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");

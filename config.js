@@ -87,6 +87,9 @@ var BOSS_CONFIG = {
 			name: "Phase 4",
 			// Entering this phase always goes back to the first special.
 			resetSpecials: true,
+			// The first special (Magic Bleed + Blue Bar, silent for Lord's tank) happens 22
+			// game ticks after the phase marker turns to Phase 4.
+			silentStartDelayMs: 22 * 600,
 			phaseLines: [],
 			rotation: [
 				["Magic Bleed", "Blue Bar"],

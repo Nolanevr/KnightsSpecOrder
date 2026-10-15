@@ -49,6 +49,7 @@
 		this.phase = 0;
 		this.nextSpecial = 0;
 		this.lastUsed = null;
+		this.phaseStartTime = null;
 	};
 
 	SpecTracker.prototype.phaseCount = function () {
@@ -69,6 +70,7 @@
 		if (index < 0 || index >= this.phaseCount() || index == this.phase) { return; }
 		this.phase = index;
 		this.lastUsed = null;
+		this.phaseStartTime = this.now();
 		if (this.currentPhase().resetSpecials) { this.nextSpecial = 0; }
 		else { this.nextSpecial = this.nextSpecial % this.rotation().length; }
 	};
@@ -86,12 +88,14 @@
 		var count = this.rotation().length;
 		this.nextSpecial = ((index % count) + count) % count;
 		this.lastUsed = null;
+		this.phaseStartTime = null;
 	};
 
 	// A step of the rotation was just used.
 	SpecTracker.prototype.specialUsed = function (index) {
 		this.nextSpecial = (index + 1) % this.rotation().length;
 		this.lastUsed = { index: index, time: this.now() };
+		this.phaseStartTime = null;
 	};
 
 	// Whether a step of the current rotation can go by without any chat line, because
@@ -106,16 +110,21 @@
 		return false;
 	};
 
-	// Call regularly. A silent step happens a set time after the previous special, so if
-	// the next step is a silent one and its time has passed with no line, assume it
-	// happened and move on. Returns a short description when it does, otherwise null.
+	// Call regularly. A silent step happens a set time after the previous special (or
+	// after the phase starts, for a phase that opens with one), so if the next step is a
+	// silent one and its time has passed with no line, assume it happened and move on.
+	// Returns a short description when it does, otherwise null.
 	SpecTracker.prototype.tick = function () {
-		var cfg = this.config, last = this.lastUsed;
-		if (!last || !cfg.silentStepDelayMs || !this.isSilentStep(this.nextSpecial)) { return null; }
-		if (this.now() < last.time + cfg.silentStepDelayMs + (cfg.silentStepGraceMs || 0)) { return null; }
+		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
+		var due = null;
+		if (last && cfg.silentStepDelayMs) { due = last.time + cfg.silentStepDelayMs; }
+		else if (!last && this.phaseStartTime != null && startDelay) { due = this.phaseStartTime + startDelay; }
+		if (due == null || !this.isSilentStep(this.nextSpecial)) { return null; }
+		if (this.now() < due + (cfg.silentStepGraceMs || 0)) { return null; }
 		var index = this.nextSpecial;
 		this.nextSpecial = (index + 1) % this.rotation().length;
-		this.lastUsed = { index: index, time: last.time + cfg.silentStepDelayMs };
+		this.lastUsed = { index: index, time: due };
+		this.phaseStartTime = null;
 		return "Step " + (index + 1) + " (" + this.rotation()[index].join(" + ") + ") has no chat line, assumed used";
 	};
 
