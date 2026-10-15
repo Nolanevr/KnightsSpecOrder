@@ -54,7 +54,7 @@
 		li.title = text;
 		if (hit) { li.className = "hit"; }
 		logEl.insertBefore(li, logEl.firstChild);
-		while (logEl.children.length > 50) { logEl.removeChild(logEl.lastChild); }
+		while (logEl.children.length > 1000) { logEl.removeChild(logEl.lastChild); }
 	}
 
 	function handleChatLine(text) {
@@ -146,6 +146,26 @@
 		reader.overlaplines = [];
 		highlightChatbox();
 	};
+	// Copy the log, oldest line first, so it can be pasted elsewhere.
+	el("btn-copy-log").onclick = function () {
+		var text = Array.prototype.map.call(logEl.children, function (li) { return li.textContent; }).reverse().join("\n");
+		var done = function () { setStatus("Log copied (" + logEl.children.length + " lines)", "ok"); };
+		var fallback = function () {
+			var area = document.createElement("textarea");
+			area.value = text;
+			document.body.appendChild(area);
+			area.select();
+			var ok = document.execCommand("copy");
+			document.body.removeChild(area);
+			if (ok) { done(); } else { setStatus("Couldn't copy the log", "warn"); }
+		};
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(done, fallback);
+		} else {
+			fallback();
+		}
+	};
+	el("btn-clear-log").onclick = function () { logEl.innerHTML = ""; };
 	el("simulate").onsubmit = function (e) {
 		e.preventDefault();
 		var input = el("simulate-text");

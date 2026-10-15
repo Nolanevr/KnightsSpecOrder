@@ -33,6 +33,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 - **Tools** (at the bottom):
   - **Chatbox**: pick which chatbox to read, if you have more than one.
   - **Show all chat lines read**: logs every line Alt1 reads. Use this to check that the boss's lines are being read correctly.
+  - **Copy log** / **Clear log**: copy the whole log (oldest line first) to paste it somewhere, or empty it before a kill.
   - **Simulate a chat line**: type a line to test the config without being at the boss. This also works in a normal browser.
 
 ## Filling in the boss data
