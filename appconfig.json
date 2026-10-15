@@ -1,0 +1,14 @@
+{
+	"appName": "Knights Spec Order",
+	"description": "Tracks Lady and Lord Ghrazi's special attack order by reading the chatbox.",
+	"appUrl": "./index.html",
+	"configUrl": "./appconfig.json",
+	"iconUrl": "./icon.png",
+	"defaultWidth": 320,
+	"defaultHeight": 260,
+	"minWidth": 260,
+	"minHeight": 160,
+	"maxWidth": 800,
+	"maxHeight": 600,
+	"permissions": "pixel,overlay"
+}
