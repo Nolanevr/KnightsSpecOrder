@@ -27,45 +27,35 @@
 
 	function render() {
 		var phase = tracker.currentPhase();
-		el("phase-name").textContent = phase.name;
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
 		// Which bosses' columns to show: all, or just the one picked with the Show button.
 		var shown = cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
 			return view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == view;
 		});
-		// Always 3 rows, so the window stays the same size: a 6-step phase is shown as two
-		// blocks side by side (steps 1-3 and 4-6).
+		// Always the height of 3 rows, so the window stays the same size: a 6-step phase is
+		// shown as one column of half-height rows.
 		var steps = tracker.rotation();
-		var blocks = Math.ceil(steps.length / ROWS);
-		var dense = blocks > 1 && shown.length > 1;
+		el("phase-name").textContent = phase.name;
+		specialsEl.classList.toggle("half", steps.length > ROWS);
+
 		var inner = "repeat(" + shown.length + ", minmax(0, 1fr))";
-		specialsEl.style.gridTemplateColumns = "repeat(" + blocks + ", minmax(0, 1fr))";
-		specialsEl.classList.toggle("dense", dense);
-		var items = [];
-		// One boss: a single name over everything. Both: names over each block.
-		for (var k = 0; k < (shown.length > 1 ? blocks : 1); k++) {
-			var head = document.createElement("div");
-			head.className = "step-head";
-			head.style.gridTemplateColumns = inner;
-			head.style.gridRow = "1";
-			head.style.gridColumn = shown.length > 1 ? String(k + 1) : "1 / -1";
-			shown.forEach(function (b) {
-				var boss = cfg.bosses[b];
-				var name = document.createElement("span");
-				name.textContent = dense ? boss.name.split(" ")[0] : boss.name;
-				name.style.color = boss.color;
-				head.appendChild(name);
-			});
-			items.push(head);
-		}
+		var head = document.createElement("div");
+		head.className = "step-head";
+		head.style.gridTemplateColumns = inner;
+		shown.forEach(function (b) {
+			var boss = cfg.bosses[b];
+			var name = document.createElement("span");
+			name.textContent = boss.name;
+			name.style.color = boss.color;
+			head.appendChild(name);
+		});
+		var items = [head];
 		steps.forEach(function (step, i) {
 			var box = document.createElement("div");
 			box.className = "step" + (i == tracker.nextSpecial ? " next" : "");
 			box.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
 			box.style.gridTemplateColumns = inner;
-			box.style.gridColumn = String(Math.floor(i / ROWS) + 1);
-			box.style.gridRow = String(i % ROWS + 2);
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
 				cell.textContent = step[b];

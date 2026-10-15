@@ -61,15 +61,7 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 }
 #phase-row button { padding: 0 6px; font-size: 10px; }
 
-#specials {
-	display: grid;
-	column-gap: 4px;
-	margin: 2px 0 4px;
-}
-/* Both bosses in a 6-step phase: four columns, so slightly smaller text. */
-#specials.dense { column-gap: 3px; }
-#specials.dense .step, #specials.dense .step-head { font-size: 11px; column-gap: 2px; padding-left: 3px; padding-right: 2px; }
-#specials.dense .step.next { font-weight: normal; }
+#specials { margin: 2px 0 4px; }
 
 /* Compact view: just the phase and the specials. */
 body.compact #controls, body.compact #status, body.compact #tools { display: none; }
@@ -90,6 +82,7 @@ body.compact #specials { margin-bottom: 0; }
 .step {
 	margin-top: 2px;
 	padding: 1px 6px;
+	line-height: 17px;
 	border: 1px solid var(--box-border);
 	background: linear-gradient(var(--box-top), var(--box-bottom) 45%, var(--box-bottom) 85%, #1e1309);
 	text-shadow: 1px 1px 0 #000;
@@ -97,6 +90,8 @@ body.compact #specials { margin-bottom: 0; }
 	cursor: pointer;
 }
 .step span { overflow: hidden; text-overflow: ellipsis; }
+/* 6-step phases: half-height rows, so six take the space of three (6 x 11.5px = 3 x 23px). */
+#specials.half .step { margin-top: 1px; padding: 0 6px; line-height: 8.5px; font-size: 10px; }
 .step.next {
 	background: linear-gradient(var(--green-top), var(--green-bottom));
 	font-weight: bold;
