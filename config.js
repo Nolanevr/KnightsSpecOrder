@@ -119,10 +119,13 @@ var BOSS_CONFIG = {
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.
+	// The colours in screenshots are ~4% darker than RuneScape's standard chat colours,
+	// so both the screenshot colour and the brighter estimate are listed.
 	extraChatColors: [
-		[148, 245, 147], // boss dialogue text (light green)
-		[127, 19, 55], // "Lady Karmina Ghrazi" speaker name (dark magenta)
-		[106, 84, 130], // "Lord Vasily Ghrazi" speaker name (purple)
+		[148, 245, 147], [153, 255, 153], // boss dialogue text (light green)
+		[127, 19, 55], [132, 20, 57], // "Lady Karmina Ghrazi" speaker name (dark magenta)
+		[106, 84, 130], [110, 87, 135], // "Lord Vasily Ghrazi" speaker name (purple)
+		[226, 46, 46], [235, 48, 48], // red game messages (e.g. familiar warnings)
 	],
 
 	// The same phase/reset trigger is ignored if it shows up again within this many
