@@ -2,7 +2,8 @@
  * Special attack / phase tracking logic. Has no Alt1 or DOM dependencies so it can
  * be tested in node.
  *
- * The phase is shared, but every boss (Lady and Lord) has its own special order.
+ * Each phase has one rotation of specials. Every step of the rotation is a pair:
+ * one special per boss, used at the same time.
  */
 (function (root) {
 	// Normalise a chat line for fuzzy matching: drop the timestamp, lower-case it,
@@ -35,11 +36,8 @@
 
 	SpecTracker.prototype.reset = function () {
 		this.phase = 0;
-		// Index of the next special, per boss id.
-		this.nextSpecial = {};
-		for (var b = 0; b < this.config.bosses.length; b++) {
-			this.nextSpecial[this.config.bosses[b].id] = 0;
-		}
+		this.nextSpecial = 0;
+		this.lastUsed = null;
 	};
 
 	SpecTracker.prototype.phaseCount = function () {
@@ -50,21 +48,18 @@
 		return this.config.phases[this.phase];
 	};
 
-	SpecTracker.prototype.specials = function (bossId) {
-		return this.currentPhase().specials[bossId] || [];
+	SpecTracker.prototype.rotation = function () {
+		return this.currentPhase().rotation;
 	};
 
-	// Move to a phase (0-based). Specials carry on where they left off unless the
+	// Move to a phase (0-based). The rotation carries on where it left off unless the
 	// phase is marked resetSpecials.
 	SpecTracker.prototype.setPhase = function (index) {
 		if (index < 0 || index >= this.phaseCount() || index == this.phase) { return; }
 		this.phase = index;
-		var reset = this.currentPhase().resetSpecials;
-		for (var id in this.nextSpecial) {
-			var count = this.specials(id).length;
-			if (reset) { this.nextSpecial[id] = 0; }
-			else if (count > 0) { this.nextSpecial[id] = this.nextSpecial[id] % count; }
-		}
+		this.lastUsed = null;
+		if (this.currentPhase().resetSpecials) { this.nextSpecial = 0; }
+		else { this.nextSpecial = this.nextSpecial % this.rotation().length; }
 	};
 
 	SpecTracker.prototype.nextPhase = function () {
@@ -75,20 +70,17 @@
 		this.setPhase(this.phase - 1);
 	};
 
-	// Mark a special of a boss in the current phase as the one that comes next.
-	SpecTracker.prototype.setNextSpecial = function (bossId, index) {
-		var count = this.specials(bossId).length;
-		if (count == 0) { return; }
-		this.nextSpecial[bossId] = ((index % count) + count) % count;
+	// Mark a step of the current rotation as the one that comes next.
+	SpecTracker.prototype.setNextSpecial = function (index) {
+		var count = this.rotation().length;
+		this.nextSpecial = ((index % count) + count) % count;
+		this.lastUsed = null;
 	};
 
-	// A boss just used a special. If `usedIndex` is given that special was used,
-	// otherwise the predicted one was.
-	SpecTracker.prototype.specialUsed = function (bossId, usedIndex) {
-		var count = this.specials(bossId).length;
-		if (count == 0) { return; }
-		var used = (usedIndex == null ? this.nextSpecial[bossId] : usedIndex);
-		this.nextSpecial[bossId] = (used + 1) % count;
+	// A step of the rotation was just used.
+	SpecTracker.prototype.specialUsed = function (index) {
+		this.nextSpecial = (index + 1) % this.rotation().length;
+		this.lastUsed = { index: index, time: this.now() };
 	};
 
 	SpecTracker.prototype.cooledDown = function (key) {
@@ -97,6 +89,20 @@
 		if (this.lastTrigger[key] != null && t - this.lastTrigger[key] < cooldown) { return false; }
 		this.lastTrigger[key] = t;
 		return true;
+	};
+
+	// Which boss special a line is, as { boss, bossIndex, special }, or null.
+	SpecTracker.prototype.matchSpecial = function (line) {
+		var bosses = this.config.bosses;
+		for (var b = 0; b < bosses.length; b++) {
+			var lines = this.config.specialLines[bosses[b].id] || {};
+			for (var special in lines) {
+				if (matchesAny(line, lines[special])) {
+					return { boss: bosses[b], bossIndex: b, special: special };
+				}
+			}
+		}
+		return null;
 	};
 
 	// Feed a chat line. Returns a short description of what happened, or null if
@@ -126,18 +132,24 @@
 			return "Entered " + this.currentPhase().name;
 		}
 
-		// Specials of the current phase. Start looking at the predicted special so that
-		// if two specials share a chat line the expected one wins.
-		for (var b = 0; b < cfg.bosses.length; b++) {
-			var boss = cfg.bosses[b];
-			var specials = this.specials(boss.id);
-			for (var i = 0; i < specials.length; i++) {
-				var s = (this.nextSpecial[boss.id] + i) % specials.length;
-				if (matchesAny(line, specials[s].lines)) {
-					if (!this.cooledDown("special" + this.phase + "_" + boss.id + "_" + s)) { return null; }
-					this.specialUsed(boss.id, s);
-					return boss.name + ": " + specials[s].name + " used";
-				}
+		var match = this.matchSpecial(line);
+		if (!match) { return null; }
+		var rotation = this.rotation();
+		var label = match.boss.name + ": " + match.special;
+
+		// The other boss's half of the step that was just used (or the same line read twice).
+		var last = this.lastUsed;
+		if (last && this.now() - last.time < (cfg.pairWindowMs || 0)
+			&& rotation[last.index][match.bossIndex] == match.special) {
+			return label + " (same step)";
+		}
+
+		// Otherwise it's the first step from the predicted one that has this special.
+		for (var i = 0; i < rotation.length; i++) {
+			var s = (this.nextSpecial + i) % rotation.length;
+			if (rotation[s][match.bossIndex] == match.special) {
+				this.specialUsed(s);
+				return label;
 			}
 		}
 		return null;

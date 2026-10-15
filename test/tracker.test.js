@@ -1,132 +1,162 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const SpecTracker = require("../tracker.js");
+const shippedConfig = require("../config.js");
 
+// The shipped boss data, with made-up chat lines so the specials can be triggered.
 function makeConfig() {
-	const specials = (who, n) => [1, 2, 3].map(s => ({ name: `P${n} Spec ${s}`, lines: [`${who}: Phase ${n} special ${s}!`] }));
-	const phase = (n, extra) => Object.assign({
-		name: "Phase " + n,
-		phaseLines: ["Entering phase " + n],
-		specials: { lady: specials("Lady Ghrazi", n), lord: specials("Lord Ghrazi", n) },
-	}, extra);
-	return {
-		bosses: [{ id: "lady", name: "Lady Ghrazi" }, { id: "lord", name: "Lord Ghrazi" }],
-		resetLines: ["Who dares challenge"],
-		nextPhaseLines: ["You will not defeat us"],
-		phases: [phase(1), phase(2), phase(3), phase(4, { resetSpecials: true }), { name: "Phase 5", phaseLines: ["Entering phase 5"], specials: {} }],
-		triggerCooldownMs: 2000,
-	};
+	const cfg = structuredClone(shippedConfig);
+	for (const boss of cfg.bosses) {
+		for (const special in cfg.specialLines[boss.id]) {
+			cfg.specialLines[boss.id][special] = [`${boss.name}: ${special}!`];
+		}
+	}
+	cfg.phases.forEach((p, i) => { p.phaseLines = [`Entering phase ${i + 1}`]; });
+	cfg.resetLines = ["Who dares challenge"];
+	cfg.nextPhaseLines = ["You will not defeat us"];
+	return cfg;
 }
 
 function makeTracker() {
 	let time = 0;
 	const tracker = new SpecTracker(makeConfig(), () => time);
-	tracker.advanceTime = ms => { time += ms; };
+	tracker.wait = ms => { time += ms; };
 	return tracker;
 }
 
-test("starts at phase 1 with the first special next for both bosses", () => {
+// Both bosses use their half of the next step, then some time passes.
+function useStep(t, lady, lord) {
+	if (lady) { t.handleLine(`[12:00:00] Lady Ghrazi: ${lady}!`); }
+	if (lord) { t.handleLine(`[12:00:00] Lord Ghrazi: ${lord}!`); }
+	t.wait(20000);
+}
+
+test("starts at phase 1 with the first special next", () => {
 	const t = makeTracker();
 	assert.strictEqual(t.phase, 0);
-	assert.deepStrictEqual(t.nextSpecial, { lady: 0, lord: 0 });
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("special chat lines advance that boss's next special and wrap around", () => {
+test("both bosses' lines for one step advance the order once", () => {
 	const t = makeTracker();
-	assert.ok(t.handleLine("[12:00:01] Lady Ghrazi: Phase 1 special 1!"));
-	assert.deepStrictEqual(t.nextSpecial, { lady: 1, lord: 0 });
-	t.advanceTime(5000);
-	t.handleLine("[12:00:06] Lady Ghrazi: Phase 1 special 2!");
-	t.advanceTime(5000);
-	t.handleLine("[12:00:11] Lady Ghrazi: Phase 1 special 3!");
-	assert.strictEqual(t.nextSpecial.lady, 0);
+	assert.ok(t.handleLine("Lady Ghrazi: 3 Prayers!"));
+	assert.strictEqual(t.nextSpecial, 1);
+	assert.match(t.handleLine("Lord Ghrazi: 3 Prayers!"), /same step/);
+	assert.strictEqual(t.nextSpecial, 1);
 });
 
-test("the two bosses advance independently", () => {
+test("the phase 1 order advances and repeats", () => {
 	const t = makeTracker();
-	t.handleLine("Lady Ghrazi: Phase 1 special 1!");
-	t.handleLine("Lord Ghrazi: Phase 1 special 1!");
-	t.advanceTime(5000);
-	t.handleLine("Lord Ghrazi: Phase 1 special 2!");
-	assert.deepStrictEqual(t.nextSpecial, { lady: 1, lord: 2 });
+	useStep(t, "3 Prayers", "3 Prayers");
+	useStep(t, "Dash", "Blood Waves");
+	assert.strictEqual(t.nextSpecial, 2);
+	useStep(t, "Magic Bleed", "Meatball");
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("a special that was missed is corrected by the next recognised one", () => {
+test("either boss's line alone advances the order (phase 3)", () => {
 	const t = makeTracker();
-	t.handleLine("Lord Ghrazi: Phase 1 special 2!");
-	assert.strictEqual(t.nextSpecial.lord, 2);
+	t.setPhase(2);
+	useStep(t, null, "3 Prayers");
+	useStep(t, "Dash", null);
+	assert.strictEqual(t.nextSpecial, 2);
+	useStep(t, null, "Blood Diamond");
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("the special order carries over into the next phase", () => {
+test("a missed special is corrected by the next recognised one", () => {
 	const t = makeTracker();
-	t.handleLine("Lady Ghrazi: Phase 1 special 1!");
-	t.advanceTime(5000);
-	t.handleLine("Lady Ghrazi: Phase 1 special 2!");
-	t.handleLine("Lord Ghrazi: Phase 1 special 1!");
+	useStep(t, null, "Meatball");
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("the order carries over into the next phase", () => {
+	const t = makeTracker();
+	useStep(t, "3 Prayers", "3 Prayers");
+	useStep(t, "Dash", "Blood Waves");
 	t.handleLine("Entering phase 2");
 	assert.strictEqual(t.phase, 1);
-	assert.deepStrictEqual(t.nextSpecial, { lady: 2, lord: 1 });
+	assert.strictEqual(t.nextSpecial, 2);
+	useStep(t, "Magic Bleed", "Blood Waves");
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
 test("generic next-phase lines move one phase forward", () => {
 	const t = makeTracker();
 	t.handleLine("Lord Ghrazi: You will not defeat us!");
 	assert.strictEqual(t.phase, 1);
-	t.advanceTime(5000);
+	t.wait(5000);
 	t.handleLine("Lord Ghrazi: You will not defeat us!");
 	assert.strictEqual(t.phase, 2);
 });
 
-test("phase 4 always resets both bosses to the first special", () => {
+test("phase 4 always resets to the first special", () => {
 	const t = makeTracker();
 	t.setPhase(2);
-	t.handleLine("Lady Ghrazi: Phase 3 special 1!");
-	t.handleLine("Lord Ghrazi: Phase 3 special 2!");
+	useStep(t, "3 Prayers", null);
 	t.handleLine("Entering phase 4");
 	assert.strictEqual(t.phase, 3);
-	assert.deepStrictEqual(t.nextSpecial, { lady: 0, lord: 0 });
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("specials from other phases are ignored", () => {
+test("specials that repeat within phase 4 don't double-advance", () => {
 	const t = makeTracker();
-	assert.strictEqual(t.handleLine("Lady Ghrazi: Phase 2 special 1!"), null);
-	assert.strictEqual(t.nextSpecial.lady, 0);
+	t.setPhase(3);
+	useStep(t, "Magic Bleed", "Blue Bar");
+	useStep(t, "5 Prayers", "5 Prayers");
+	assert.strictEqual(t.nextSpecial, 2);
+	useStep(t, "Dash", "Blood Waves");
+	useStep(t, "Magic Bleed", "Meatball");
+	assert.strictEqual(t.nextSpecial, 4);
+	useStep(t, "5 Prayers", "5 Prayers");
+	useStep(t, "Dash", "Blood Waves");
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("the same line read twice in quick succession only counts once", () => {
+test("phase 5 carries on from where phase 4 was", () => {
 	const t = makeTracker();
-	t.handleLine("Lady Ghrazi: Phase 1 special 1!");
-	t.advanceTime(600);
-	assert.strictEqual(t.handleLine("Lady Ghrazi: Phase 1 special 1!"), null);
-	assert.strictEqual(t.nextSpecial.lady, 1);
+	t.setPhase(3);
+	useStep(t, "Magic Bleed", "Blue Bar");
+	useStep(t, "5 Prayers", "5 Prayers");
+	useStep(t, "Dash", "Blood Waves");
+	t.handleLine("Entering phase 5");
+	assert.strictEqual(t.phase, 4);
+	assert.strictEqual(t.nextSpecial, 3);
+	useStep(t, "Magic Bleed", "Blue Bar");
+	useStep(t, "5 Prayers", "5 Prayers");
+	useStep(t, "Dash", "Meatball");
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("specials that aren't in the current phase are ignored", () => {
+	const t = makeTracker();
+	assert.strictEqual(t.handleLine("Lord Ghrazi: Mind Flay!"), null);
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
 test("matching tolerates case, punctuation and common OCR confusions", () => {
 	const t = makeTracker();
-	assert.ok(t.handleLine("[12:00:01] LADY GHRAZl: PHASE l SPECIAL 1"));
+	assert.ok(t.handleLine("[12:00:01] LADY GHRAZl 3 PRAYERS"));
 });
 
 test("reset line starts a new fight", () => {
 	const t = makeTracker();
-	t.handleLine("Lady Ghrazi: Phase 1 special 1!");
+	useStep(t, "3 Prayers", "3 Prayers");
 	t.setPhase(4);
 	t.handleLine("Lady Ghrazi: Who dares challenge us?");
 	assert.strictEqual(t.phase, 0);
-	assert.deepStrictEqual(t.nextSpecial, { lady: 0, lord: 0 });
-});
-
-test("phase 5 has no specials and ignores special triggers", () => {
-	const t = makeTracker();
-	t.setPhase(4);
-	assert.strictEqual(t.specials("lady").length, 0);
-	t.specialUsed("lady");
-	assert.strictEqual(t.handleLine("Lady Ghrazi: Phase 4 special 1!"), null);
+	assert.strictEqual(t.nextSpecial, 0);
 });
 
 test("the shipped config is well formed", () => {
-	const cfg = require("../config.js");
+	const cfg = shippedConfig;
 	assert.strictEqual(cfg.phases.length, 5);
-	cfg.phases.slice(0, 4).forEach(p => cfg.bosses.forEach(b => assert.strictEqual(p.specials[b.id].length, 3)));
 	assert.ok(cfg.phases[3].resetSpecials);
+	for (const phase of cfg.phases) {
+		for (const step of phase.rotation) {
+			assert.strictEqual(step.length, cfg.bosses.length, phase.name);
+			step.forEach((special, b) => assert.ok(special in cfg.specialLines[cfg.bosses[b].id], `${phase.name}: ${special}`));
+		}
+	}
 	new SpecTracker(cfg).handleLine("anything");
 });

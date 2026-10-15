@@ -8,7 +8,7 @@
 	var inAlt1 = typeof alt1 != "undefined";
 
 	var el = function (id) { return document.getElementById(id); };
-	var bossesEl = el("bosses");
+	var specialsEl = el("specials");
 	var statusEl = el("status");
 	var logEl = el("log");
 	var showChatEl = el("show-chat");
@@ -19,31 +19,31 @@
 		el("phase-name").textContent = phase.name;
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
-		bossesEl.innerHTML = "";
+		var head = document.createElement("tr");
+		head.appendChild(document.createElement("th"));
 		cfg.bosses.forEach(function (boss) {
-			var col = document.createElement("div");
-			col.className = "boss";
-			var title = document.createElement("h2");
-			title.textContent = boss.name;
-			col.appendChild(title);
-			var list = document.createElement("ol");
-			var specials = tracker.specials(boss.id);
-			if (specials.length == 0) {
-				var empty = document.createElement("li");
-				empty.className = "empty";
-				empty.textContent = "No specials";
-				list.appendChild(empty);
-			}
-			specials.forEach(function (special, i) {
-				var li = document.createElement("li");
-				li.textContent = (i + 1) + ". " + special.name;
-				if (i == tracker.nextSpecial[boss.id]) { li.className = "next"; }
-				li.onclick = function () { tracker.setNextSpecial(boss.id, i); render(); };
-				list.appendChild(li);
-			});
-			col.appendChild(list);
-			bossesEl.appendChild(col);
+			var th = document.createElement("th");
+			th.textContent = boss.name;
+			th.style.color = boss.color;
+			head.appendChild(th);
 		});
+		var rows = [head];
+		tracker.rotation().forEach(function (step, i) {
+			var tr = document.createElement("tr");
+			if (i == tracker.nextSpecial) { tr.className = "next"; }
+			var num = document.createElement("td");
+			num.className = "num";
+			num.textContent = i + 1;
+			tr.appendChild(num);
+			step.forEach(function (special) {
+				var td = document.createElement("td");
+				td.textContent = special;
+				tr.appendChild(td);
+			});
+			tr.onclick = function () { tracker.setNextSpecial(i); render(); };
+			rows.push(tr);
+		});
+		specialsEl.replaceChildren.apply(specialsEl, rows);
 	}
 
 	function setStatus(text, type) {

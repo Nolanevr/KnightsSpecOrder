@@ -1,12 +1,19 @@
 # KnightsSpecOrder
 
-An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbox and shows which special attack Lady Ghrazi and Lord Ghrazi will each use next.
+An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbox and shows which special attacks Lady Ghrazi and Lord Ghrazi will use next.
 
-- Shows the current phase and, side by side, each boss's 3 special attacks for that phase, with the next one highlighted in green.
-- Lady and Lord each have their own special order. When one of them yells a special attack's chat line, that boss's highlight moves on to their next special.
-- When a phase-change line is yelled, the panel switches to the next phase. Each boss's special order **carries over**: if 2 specials were used in phase 1, special 3 is next in phase 2.
-- Entering **phase 4** always resets both bosses to special 1.
-- Phase 5 has no special attacks by default.
+- Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
+- When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
+- When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
+- Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
+
+| Phase | Order (Lady + Lord) |
+| --- | --- |
+| 1 | 3 Prayers + 3 Prayers → Dash + Blood Waves → Magic Bleed + Meatball |
+| 2 | 3 Prayers + 3 Prayers → Dash + Mind Flay → Magic Bleed + Blood Waves |
+| 3 | 3 Prayers + 3 Prayers → Dash + Blood Waves → Magic Bleed + Blood Diamond |
+| 4 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Meatball → 5 Prayers + 5 Prayers → Dash + Blood Waves |
+| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Meatball |
 
 ## Installing in Alt1
 
@@ -21,7 +28,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 ## Using it
 
 - Keep the chatbox where the boss's lines appear visible. When the app finds the chatbox it briefly outlines it in green.
-- **◀ / ▶** change phase by hand. **Click a special** to make it that boss's next one. **Reset** goes back to phase 1, special 1. **Find chat** locates the chatbox again if you moved it.
+- **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
 - **Tools** (at the bottom):
   - **Chatbox**: pick which chatbox to read, if you have more than one.
   - **Show all chat lines read**: logs every line Alt1 reads. Use this to check that the boss's lines are being read correctly.
@@ -29,10 +36,10 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 
 ## Filling in the boss data
 
-All boss data is in [`config.js`](config.js). For each phase, fill in `specials.lady` and `specials.lord`:
+All boss data is in [`config.js`](config.js).
 
-- `name`: the special attack's name, as shown in the panel.
-- `lines`: what that boss yells when it uses that special. If Lady and Lord could say similar things, include the speaker's name (e.g. `"Lady Ghrazi: ..."`) so the line can only match one of them.
+- `specialLines`: what each boss yells for each special. Fill these in once; they're used in every phase. If Lady and Lord say similar things, include the speaker's name (e.g. `"Lady Ghrazi: ..."`) so a line can only match one of them.
+- `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs.
 
 Also fill in each phase's `phaseLines`: what is yelled when the fight enters that phase. If the same thing is said at every phase change, put it in `nextPhaseLines` instead.
 
