@@ -31,7 +31,9 @@
 	//  compact: hide the buttons, status line and Tools
 	//  names:   the player's own names for specials, as { bossId: { special: name } }
 	//  bossNames: the player's own names for the bosses, as { bossId: name }
-	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {} };
+	//  headers: "show" the boss names over the columns, or "tint" to hide them and colour
+	//           each special's text in its boss's colour instead
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show" };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
@@ -64,7 +66,10 @@
 		var inner = "repeat(" + shown.length + ", minmax(0, 1fr))";
 		var items = [];
 		// One boss: a single name over everything. Both side by side: names over each block.
-		for (var k = 0; k < (shown.length > 1 ? blocks : 1); k++) {
+		var tint = settings.headers == "tint";
+		specialsEl.classList.toggle("tint", tint);
+		var firstRow = tint ? 1 : 2;
+		for (var k = 0; k < (tint ? 0 : shown.length > 1 ? blocks : 1); k++) {
 			var head = document.createElement("div");
 			head.className = "step-head";
 			head.style.gridTemplateColumns = inner;
@@ -85,12 +90,13 @@
 			box.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
 			box.style.gridTemplateColumns = inner;
 			box.style.gridColumn = String(blocks > 1 ? Math.floor(i / ROWS) + 1 : 1);
-			box.style.gridRow = String(blocks > 1 ? i % ROWS + 2 : i + 2);
+			box.style.gridRow = String(firstRow + (blocks > 1 ? i % ROWS : i));
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
 				cell.className = "cell";
 				var own = document.createElement("span");
 				own.textContent = displayName(cfg.bosses[b].id, step[b]);
+				if (tint) { own.style.color = cfg.bosses[b].color; }
 				cell.appendChild(own);
 				// With one boss shown, add the other boss's specials that matter to this boss's
 				// tank, in the other boss's colour.
@@ -274,6 +280,7 @@
 		if (["standard", "side", "ultra"].indexOf(settings.layout) == -1) { settings.layout = "ultra"; }
 		if (!settings.names || typeof settings.names != "object") { settings.names = {}; }
 		if (!settings.bossNames || typeof settings.bossNames != "object") { settings.bossNames = {}; }
+		if (settings.headers != "tint") { settings.headers = "show"; }
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -292,7 +299,7 @@
 			if (boss) { button.textContent = bossName(boss, true); }
 		});
 		el("opt-compact").checked = settings.compact;
-		[["opt-view", "view"], ["opt-layout", "layout"]].forEach(function (pair) {
+		[["opt-view", "view"], ["opt-layout", "layout"], ["opt-headers", "headers"]].forEach(function (pair) {
 			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
 				button.classList.toggle("selected", button.dataset.value == settings[pair[1]]);
 			});
@@ -302,6 +309,7 @@
 	}
 	segmented(el("opt-view"), "view", [["both", "Both"]].concat(cfg.bosses.map(function (b) { return [b.id, bossName(b, true)]; })));
 	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
+	segmented(el("opt-headers"), "headers", [["show", "Show"], ["tint", "Hide, colour the text"]]);
 	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
 
 	// Rename panel: a box per boss and per special. Empty means the original name.

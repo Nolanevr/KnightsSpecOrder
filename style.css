@@ -159,6 +159,10 @@ body.compact #specials { margin-bottom: 0; }
 	background: linear-gradient(var(--green-top), var(--green-bottom));
 	font-weight: bold;
 }
+/* Coloured text on the green row needs a solid outline to stay readable. */
+#specials.tint .step.next, .step.next .extra {
+	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 1px #000;
+}
 
 #controls { display: flex; gap: 4px; }
 #controls button { flex: 1; font-size: 11px; }

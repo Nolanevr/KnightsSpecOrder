@@ -35,6 +35,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 - **⚙** opens the options (remembered between sessions):
   - **Show: Both / Lady / Lord**: both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with. With **Lady** shown, Lord's Meatball and Blue Bar are still shown (in blue, next to Lady's special in the same step), since they matter to Lady's tank too.
   - **6 specials: Standard / Side by side / Ultra compact**: how phases 4 and 5 are shown (see above).
+  - **Boss names: Show / Hide, colour the text**: hide the boss names over the columns and colour each special in its boss's colour instead (red for Lady, blue for Lord).
   - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
   - **Rename bosses and specials…**: type your own name for either boss or any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
