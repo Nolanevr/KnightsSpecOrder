@@ -30,6 +30,13 @@ function useStep(t, lady, lord) {
 	t.wait(20000);
 }
 
+test("the real first-special lines advance phase 1 once", () => {
+	const t = new SpecTracker(shippedConfig);
+	assert.ok(t.handleLine("[21:08:31] Lady Karmina Ghrazi: SUFFER UNTO ME!"));
+	assert.match(t.handleLine("[21:08:31] Lord Vasily Ghrazi: FALL IN LINE!"), /same step/);
+	assert.strictEqual(t.nextSpecial, 1);
+});
+
 test("starts at phase 1 with the first special next", () => {
 	const t = makeTracker();
 	assert.strictEqual(t.phase, 0);

@@ -15,6 +15,7 @@
  */
 var BOSS_CONFIG = {
 	// The two bosses, in the order used by the `rotation` pairs below.
+	// In game they are "Lady Karmina Ghrazi" and "Lord Vasily Ghrazi".
 	bosses: [
 		{ id: "lady", name: "Lady Ghrazi", color: "#ff4a4a" }, // melee
 		{ id: "lord", name: "Lord Ghrazi", color: "#4a9bff" }, // magic
@@ -24,13 +25,13 @@ var BOSS_CONFIG = {
 	// they are used in every phase the special appears in.
 	specialLines: {
 		lady: {
-			"3 Prayers": [],
+			"3 Prayers": ["SUFFER UNTO ME"],
 			"5 Prayers": [],
 			"Dash": [],
 			"Magic Bleed": [],
 		},
 		lord: {
-			"3 Prayers": [],
+			"3 Prayers": ["FALL IN LINE"],
 			"5 Prayers": [],
 			"Blood Waves": [],
 			"Meatball": [],
@@ -121,6 +122,7 @@ var BOSS_CONFIG = {
 	extraChatColors: [
 		[148, 245, 147], // boss dialogue text (light green)
 		[127, 19, 55], // "Lady Karmina Ghrazi" speaker name (dark magenta)
+		[106, 84, 130], // "Lord Vasily Ghrazi" speaker name (purple)
 	],
 
 	// The same phase/reset trigger is ignored if it shows up again within this many
