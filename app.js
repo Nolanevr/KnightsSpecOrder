@@ -239,6 +239,15 @@
 		input.value = "";
 	};
 
+	// Move past steps that have no chat line once their time has passed.
+	setInterval(function () {
+		var result = tracker.tick();
+		if (result) {
+			log(result, true);
+			render();
+		}
+	}, 500);
+
 	render();
 	start();
 })();

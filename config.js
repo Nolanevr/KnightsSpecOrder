@@ -117,6 +117,12 @@ var BOSS_CONFIG = {
 	// treated as the other half of that special instead of the next one.
 	pairWindowMs: 6000,
 
+	// Specials come this far apart. A step with no chat line for this player (Blue Bar,
+	// with Lady's half only shown to her tank) is assumed used once this long plus the
+	// grace period has passed since the last special without any line.
+	specialIntervalMs: 15000,
+	silentStepGraceMs: 3000,
+
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.
 	// The colours in screenshots are ~4% darker than RuneScape's standard chat colours,

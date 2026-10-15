@@ -134,6 +134,51 @@ test("phase 4 carries on after the silent Blue Bar step", () => {
 	assert.strictEqual(t.nextSpecial, 2); // 5 Prayers was step 2, so Dash + Blood Waves is next
 });
 
+test("the silent Blue Bar step is assumed used when its time passes (Lord's tank)", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(3);
+	t.setNextSpecial(5);
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 6
+	assert.strictEqual(t.nextSpecial, 0); // step 1: Magic Bleed + Blue Bar, no line for Lord's tank
+	time += 17000;
+	assert.strictEqual(t.tick(), null);
+	time += 2000;
+	assert.match(t.tick(), /Step 1/);
+	assert.strictEqual(t.nextSpecial, 1);
+	time += 11000;
+	t.handleLine("[22:00:30] . ord Vasily '  hrazi: FALL IN LINE!"); // step 2
+	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("Lady's line for the Blue Bar step still counts once for her tank", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	t.setNextSpecial(2);
+	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!"); // step 3
+	time += 15000;
+	t.handleLine("[22:00:15] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 4
+	assert.strictEqual(t.nextSpecial, 4);
+	time += 20000;
+	assert.strictEqual(t.tick(), null); // step 5 has lines, so no guessing
+	assert.strictEqual(t.nextSpecial, 4);
+});
+
+test("a silent step whose line arrives just after the guess isn't counted twice", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	t.setNextSpecial(2);
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
+	time += 18500;
+	assert.ok(t.tick()); // step 4 (Magic Bleed + Blue Bar) assumed
+	assert.strictEqual(t.nextSpecial, 4);
+	time += 500;
+	assert.match(t.handleLine("[22:00:19] Lady Karmina Ghrazi: Your blood becomes tribute!"), /same step/);
+	assert.strictEqual(t.nextSpecial, 4);
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");

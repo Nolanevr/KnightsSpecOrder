@@ -94,6 +94,31 @@
 		this.lastUsed = { index: index, time: this.now() };
 	};
 
+	// Whether a step of the current rotation can go by without any chat line, because
+	// one of its specials has none (Blue Bar) and the other boss's line is only shown
+	// to that boss's tank.
+	SpecTracker.prototype.isSilentStep = function (index) {
+		var cfg = this.config, step = this.rotation()[index];
+		for (var b = 0; b < step.length; b++) {
+			var lines = (cfg.specialLines[cfg.bosses[b].id] || {})[step[b]];
+			if (!lines || !lines.length) { return true; }
+		}
+		return false;
+	};
+
+	// Call regularly. Specials come at a steady rhythm, so if the next step is a silent
+	// one and its time has passed with no line, assume it happened and move on. Returns a
+	// short description when it does, otherwise null.
+	SpecTracker.prototype.tick = function () {
+		var cfg = this.config, last = this.lastUsed;
+		if (!last || !cfg.specialIntervalMs || !this.isSilentStep(this.nextSpecial)) { return null; }
+		if (this.now() < last.time + cfg.specialIntervalMs + (cfg.silentStepGraceMs || 0)) { return null; }
+		var index = this.nextSpecial;
+		this.nextSpecial = (index + 1) % this.rotation().length;
+		this.lastUsed = { index: index, time: last.time + cfg.specialIntervalMs };
+		return "Step " + (index + 1) + " (" + this.rotation()[index].join(" + ") + ") has no chat line, assumed used";
+	};
+
 	SpecTracker.prototype.cooledDown = function (key) {
 		var t = this.now();
 		var cooldown = this.config.triggerCooldownMs || 0;
