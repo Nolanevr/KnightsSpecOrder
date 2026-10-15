@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Knights Spec Order</title>
+	<link rel="stylesheet" href="style.css">
+	<!-- Alt1 libraries (A1lib, OCR, Chatbox globals) -->
+	<script src="https://unpkg.com/alt1@0.1.3/dist/base/index.js"></script>
+	<script src="https://unpkg.com/alt1@0.1.3/dist/ocr/index.js"></script>
+	<script src="https://unpkg.com/alt1@0.1.3/dist/chatbox/index.js"></script>
+	<script src="config.js"></script>
+	<script src="tracker.js"></script>
+</head>
+<body>
+	<div id="panel">
+		<div id="phase-row">
+			<button id="phase-prev" title="Previous phase">&#9664;</button>
+			<span id="phase-name">Phase 1</span>
+			<button id="phase-next" title="Next phase">&#9654;</button>
+		</div>
+		<div id="bosses" title="Click a special to make it the next one"></div>
+		<div id="controls">
+			<button id="btn-reset" title="Back to Phase 1, special 1">Reset</button>
+			<button id="btn-find" title="Locate the chatbox again">Find chat</button>
+		</div>
+		<div id="status">Starting…</div>
+	</div>
+
+	<details id="tools">
+		<summary>Tools</summary>
+		<label id="chatbox-select-row" hidden>Chatbox <select id="chatbox-select"></select></label>
+		<label><input type="checkbox" id="show-chat"> Show all chat lines read</label>
+		<form id="simulate">
+			<input id="simulate-text" placeholder="Simulate a chat line…" autocomplete="off">
+			<button type="submit">Send</button>
+		</form>
+		<ul id="log"></ul>
+	</details>
+
+	<script src="app.js"></script>
+</body>
+</html>
