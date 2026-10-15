@@ -91,6 +91,36 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 .seg button { white-space: nowrap; }
 .seg button { padding: 1px 5px; font-size: 11px; }
 .seg button + button { border-left: none; }
+#btn-rename { font-size: 11px; padding: 1px 6px; }
+
+/* Rename panel: covers the window, scrolls if the window is short. */
+#rename {
+	position: fixed;
+	inset: 0;
+	z-index: 20;
+	overflow-y: auto;
+	padding: 4px 8px;
+	background-color: var(--bg);
+	background-image: radial-gradient(var(--bg-speck) 1px, transparent 1px);
+	background-size: 3px 3px;
+	font-size: 11px;
+}
+.rename-head {
+	position: sticky;
+	top: -4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 0 4px;
+	background: var(--bg);
+	border-bottom: 1px solid var(--gold);
+}
+.rename-head span { flex: 1; font: 14px Georgia, "Times New Roman", serif; }
+.rename-head button { font-size: 11px; }
+.rename-boss { margin: 5px 0 2px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+.rename-row { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+.rename-row span { width: 82px; flex: none; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rename-row input { flex: 1; min-width: 0; }
 .seg button.selected { background: linear-gradient(var(--green-top), var(--green-bottom)); font-weight: bold; }
 
 /* Compact view: just the phase and the specials. */

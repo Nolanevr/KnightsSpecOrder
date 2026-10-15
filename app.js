@@ -29,7 +29,13 @@
 	//  layout:  how a 6-step phase is shown: "standard" (6 full rows), "side" (steps 1-3
 	//           and 4-6 side by side) or "ultra" (6 half-height rows, the space of 3)
 	//  compact: hide the buttons, status line and Tools
-	var settings = { view: "both", layout: "ultra", compact: false };
+	//  names:   the player's own names for specials, as { bossId: { special: name } }
+	var settings = { view: "both", layout: "ultra", compact: false, names: {} };
+
+	// The name to show for a boss's special: the player's own name if they set one.
+	function displayName(bossId, special) {
+		return (settings.names[bossId] || {})[special] || special;
+	}
 
 	function render() {
 		var phase = tracker.currentPhase();
@@ -75,7 +81,7 @@
 			box.style.gridRow = String(blocks > 1 ? i % ROWS + 2 : i + 2);
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
-				cell.textContent = step[b];
+				cell.textContent = displayName(cfg.bosses[b].id, step[b]);
 				box.appendChild(cell);
 			});
 			box.onclick = function () { tracker.setNextSpecial(i); render(); };
@@ -243,6 +249,7 @@
 		} catch (e) { }
 		if (settings.view != "both" && !cfg.bosses.some(function (b) { return b.id == settings.view; })) { settings.view = "both"; }
 		if (["standard", "side", "ultra"].indexOf(settings.layout) == -1) { settings.layout = "ultra"; }
+		if (!settings.names || typeof settings.names != "object") { settings.names = {}; }
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -268,6 +275,51 @@
 	segmented(el("opt-view"), "view", [["both", "Both"]].concat(cfg.bosses.map(function (b) { return [b.id, b.name.split(" ")[0]]; })));
 	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
 	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
+
+	// Rename panel: a box per special, grouped by boss. Empty means the original name.
+	function buildRenameList() {
+		var list = el("rename-list");
+		list.innerHTML = "";
+		cfg.bosses.forEach(function (boss) {
+			var title = document.createElement("div");
+			title.className = "rename-boss";
+			title.textContent = boss.name;
+			title.style.color = boss.color;
+			list.appendChild(title);
+			Object.keys(cfg.specialLines[boss.id] || {}).forEach(function (special) {
+				var row = document.createElement("label");
+				row.className = "rename-row";
+				var original = document.createElement("span");
+				original.textContent = special;
+				var input = document.createElement("input");
+				input.maxLength = 24;
+				input.placeholder = special;
+				input.value = (settings.names[boss.id] || {})[special] || "";
+				input.oninput = function () {
+					var names = settings.names[boss.id] = settings.names[boss.id] || {};
+					var name = input.value.trim();
+					if (name && name != special) { names[special] = name; } else { delete names[special]; }
+					saveSettings();
+					render();
+				};
+				row.appendChild(original);
+				row.appendChild(input);
+				list.appendChild(row);
+			});
+		});
+	}
+	el("btn-rename").onclick = function () {
+		el("options").hidden = true;
+		buildRenameList();
+		el("rename").hidden = false;
+	};
+	el("btn-rename-done").onclick = function () { el("rename").hidden = true; };
+	el("btn-rename-reset").onclick = function () {
+		settings.names = {};
+		saveSettings();
+		buildRenameList();
+		render();
+	};
 	el("btn-options").onclick = function (e) {
 		e.stopPropagation();
 		el("options").hidden = !el("options").hidden;
