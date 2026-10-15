@@ -22,40 +22,57 @@
 	var MARKER_LOST_READS = 8; // forget the marker after this many failed reads in a row
 	var phaseFont = null;
 	var marker = { pos: null, misses: 0, lastPhase: null, lastSearch: 0, activeUntil: 0 };
-	var view = "both";
-	var ROWS = 3; // rows of specials shown, whatever the phase
+	var ROWS = 3; // rows of specials in a normal phase
+
+	// Options from the cog menu, remembered between sessions.
+	//  view:    "both", or a boss id to show only that boss (phase 3 always shows both)
+	//  layout:  how a 6-step phase is shown: "standard" (6 full rows), "side" (steps 1-3
+	//           and 4-6 side by side) or "ultra" (6 half-height rows, the space of 3)
+	//  compact: hide the buttons, status line and Tools
+	var settings = { view: "both", layout: "ultra", compact: false };
 
 	function render() {
 		var phase = tracker.currentPhase();
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
-		// Which bosses' columns to show: all, or just the one picked with the Show button.
+		// Which bosses' columns to show: all, or just the one picked in the options.
 		var shown = cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
-			return view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == view;
+			return settings.view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == settings.view;
 		});
-		// Always the height of 3 rows, so the window stays the same size: a 6-step phase is
-		// shown as one column of half-height rows.
-		var steps = tracker.rotation();
 		el("phase-name").textContent = phase.name;
-		specialsEl.classList.toggle("half", steps.length > ROWS);
+		var steps = tracker.rotation();
+		var layout = steps.length > ROWS ? settings.layout : "standard";
+		var blocks = layout == "side" ? Math.ceil(steps.length / ROWS) : 1;
+		var dense = blocks > 1 && shown.length > 1;
+		specialsEl.classList.toggle("half", layout == "ultra");
+		specialsEl.classList.toggle("dense", dense);
+		specialsEl.style.gridTemplateColumns = "repeat(" + blocks + ", minmax(0, 1fr))";
 
 		var inner = "repeat(" + shown.length + ", minmax(0, 1fr))";
-		var head = document.createElement("div");
-		head.className = "step-head";
-		head.style.gridTemplateColumns = inner;
-		shown.forEach(function (b) {
-			var boss = cfg.bosses[b];
-			var name = document.createElement("span");
-			name.textContent = boss.name;
-			name.style.color = boss.color;
-			head.appendChild(name);
-		});
-		var items = [head];
+		var items = [];
+		// One boss: a single name over everything. Both side by side: names over each block.
+		for (var k = 0; k < (shown.length > 1 ? blocks : 1); k++) {
+			var head = document.createElement("div");
+			head.className = "step-head";
+			head.style.gridTemplateColumns = inner;
+			head.style.gridRow = "1";
+			head.style.gridColumn = shown.length > 1 ? String(k + 1) : "1 / -1";
+			shown.forEach(function (b) {
+				var boss = cfg.bosses[b];
+				var name = document.createElement("span");
+				name.textContent = dense ? boss.name.split(" ")[0] : boss.name;
+				name.style.color = boss.color;
+				head.appendChild(name);
+			});
+			items.push(head);
+		}
 		steps.forEach(function (step, i) {
 			var box = document.createElement("div");
 			box.className = "step" + (i == tracker.nextSpecial ? " next" : "");
 			box.title = "Step " + (i + 1) + " \u2013 click to make it the next special";
 			box.style.gridTemplateColumns = inner;
+			box.style.gridColumn = String(blocks > 1 ? Math.floor(i / ROWS) + 1 : 1);
+			box.style.gridRow = String(blocks > 1 ? i % ROWS + 2 : i + 2);
 			shown.forEach(function (b) {
 				var cell = document.createElement("span");
 				cell.textContent = step[b];
@@ -210,25 +227,56 @@
 		}, cfg.readIntervalMs);
 	}
 
-	// Show both bosses or just one, remembered between sessions.
-	var views = ["both"].concat(cfg.bosses.map(function (boss) { return boss.id; }));
-	function setView(v) {
-		view = views.indexOf(v) == -1 ? "both" : v;
-		var boss = cfg.bosses.filter(function (b) { return b.id == view; })[0];
-		el("btn-view").textContent = "Show: " + (boss ? boss.name.split(" ")[0] : "Both");
-		try { localStorage.setItem("kso.view", view); } catch (e) { }
+	// Options menu (cog button).
+	function saveSettings() {
+		try { localStorage.setItem("kso.settings", JSON.stringify(settings)); } catch (e) { }
+	}
+	function loadSettings() {
+		try {
+			var saved = JSON.parse(localStorage.getItem("kso.settings") || "null");
+			if (saved) { Object.assign(settings, saved); }
+			else {
+				// Settings saved by older versions.
+				settings.view = localStorage.getItem("kso.view") || settings.view;
+				settings.compact = localStorage.getItem("kso.compact") == "1";
+			}
+		} catch (e) { }
+		if (settings.view != "both" && !cfg.bosses.some(function (b) { return b.id == settings.view; })) { settings.view = "both"; }
+		if (["standard", "side", "ultra"].indexOf(settings.layout) == -1) { settings.layout = "ultra"; }
+	}
+	// A row of buttons where one is selected, for a setting.
+	function segmented(container, key, choices) {
+		choices.forEach(function (choice) {
+			var button = document.createElement("button");
+			button.textContent = choice[1];
+			button.dataset.value = choice[0];
+			button.onclick = function () { settings[key] = choice[0]; applySettings(); };
+			container.appendChild(button);
+		});
+	}
+	function applySettings() {
+		document.body.classList.toggle("compact", settings.compact);
+		el("opt-compact").checked = settings.compact;
+		[["opt-view", "view"], ["opt-layout", "layout"]].forEach(function (pair) {
+			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
+				button.classList.toggle("selected", button.dataset.value == settings[pair[1]]);
+			});
+		});
+		saveSettings();
 		render();
 	}
-	el("btn-view").onclick = function () { setView(views[(views.indexOf(view) + 1) % views.length]); };
-	try { view = localStorage.getItem("kso.view") || "both"; } catch (e) { }
-
-	// Compact view, remembered between sessions.
-	function setCompact(on) {
-		document.body.classList.toggle("compact", on);
-		try { localStorage.setItem("kso.compact", on ? "1" : "0"); } catch (e) { }
-	}
-	try { setCompact(localStorage.getItem("kso.compact") == "1"); } catch (e) { }
-	el("btn-compact").onclick = function () { setCompact(!document.body.classList.contains("compact")); };
+	segmented(el("opt-view"), "view", [["both", "Both"]].concat(cfg.bosses.map(function (b) { return [b.id, b.name.split(" ")[0]]; })));
+	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
+	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
+	el("btn-options").onclick = function (e) {
+		e.stopPropagation();
+		el("options").hidden = !el("options").hidden;
+	};
+	// Close the menu when clicking anywhere else.
+	document.addEventListener("click", function (e) {
+		if (!el("options").hidden && !el("options").contains(e.target)) { el("options").hidden = true; }
+	});
+	loadSettings();
 
 	el("phase-prev").onclick = function () { tracker.previousPhase(); render(); };
 	el("phase-next").onclick = function () { tracker.nextPhase(); render(); };
@@ -283,6 +331,6 @@
 		}
 	}, 500);
 
-	setView(view);
+	applySettings();
 	start();
 })();

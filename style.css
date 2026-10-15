@@ -61,7 +61,37 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 }
 #phase-row button { padding: 0 6px; font-size: 10px; }
 
-#specials { margin: 2px 0 4px; }
+#specials {
+	display: grid;
+	column-gap: 4px;
+	margin: 2px 0 4px;
+}
+/* Both bosses side by side in a 6-step phase: four columns, so smaller text. */
+#specials.dense { column-gap: 3px; }
+#specials.dense .step, #specials.dense .step-head { font-size: 11px; column-gap: 2px; padding-left: 3px; padding-right: 2px; }
+#specials.dense .step.next { font-weight: normal; }
+
+/* Options menu, dropped down from the cog. */
+#panel { position: relative; }
+#options {
+	position: absolute;
+	top: 28px;
+	right: 4px;
+	z-index: 10;
+	padding: 4px 6px;
+	background: var(--bg);
+	border: 1px solid var(--box-border);
+	box-shadow: 0 2px 6px #000;
+	font-size: 11px;
+	max-width: calc(100vw - 22px);
+}
+.opt-row { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; margin: 3px 0; }
+.opt-row > span { width: 58px; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; }
+.seg button { white-space: nowrap; }
+.seg button { padding: 1px 5px; font-size: 11px; }
+.seg button + button { border-left: none; }
+.seg button.selected { background: linear-gradient(var(--green-top), var(--green-bottom)); font-weight: bold; }
 
 /* Compact view: just the phase and the specials. */
 body.compact #controls, body.compact #status, body.compact #tools { display: none; }

@@ -2,7 +2,7 @@
 
 An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbox and shows which special attacks Lady Ghrazi and Lord Ghrazi will use next.
 
-- The specials always take the height of 3 rows, so the window stays the same size in every phase: phases 4 and 5 (6 steps) are shown as one column of half-height rows.
+- Phases 4 and 5 have 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
@@ -32,8 +32,10 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 ## Using it
 
 - Keep the chatbox where the boss's lines appear visible. When the app finds the chatbox it briefly outlines it in green.
-- **Show: Both / Lady / Lord** shows both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with. The app remembers your choice.
-- **☰** switches to a compact view with just the phase and the specials (hides the buttons, status line and Tools). Click it again to bring them back; the app remembers your choice.
+- **⚙** opens the options (remembered between sessions):
+  - **Show: Both / Lady / Lord**: both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with.
+  - **6 specials: Standard / Side by side / Ultra compact**: how phases 4 and 5 are shown (see above).
+  - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
 - **Tools** (at the bottom):
   - **Chatbox**: pick which chatbox to read, if you have more than one.
