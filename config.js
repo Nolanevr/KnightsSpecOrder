@@ -35,7 +35,7 @@ var BOSS_CONFIG = {
 			"5 Prayers": [],
 			"Blood Waves": ["Drown in Blood"],
 			"Meatball": ["BEAR THE CRIMSON"],
-			"Mind Flay": [],
+			"Mind Flay": ["Your mind betrays you"],
 			"Blood Diamond": [],
 			"Blue Bar": [],
 		},
@@ -66,7 +66,7 @@ var BOSS_CONFIG = {
 		},
 		{
 			name: "Phase 2",
-			phaseLines: [],
+			phaseLines: ["PRAISE THE SANGUINE"], // said by both Lady and Lord
 			rotation: [
 				["3 Prayers", "3 Prayers"],
 				["Dash", "Mind Flay"],

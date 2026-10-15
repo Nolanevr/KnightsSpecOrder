@@ -70,6 +70,19 @@ test("the phase 1 lines from a real kill follow the order", () => {
 	assert.strictEqual(t.nextSpecial, 0);
 });
 
+test("PRAISE THE SANGUINE moves to phase 2 and the order carries on", () => {
+	const t = new SpecTracker(shippedConfig);
+	t.handleLine("[21:40:18] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	t.handleLine("[21:40:25] Lady Karmina Ghrazi: PRAISE THE SANGUINE");
+	t.handleLine("[21:40:25] . ord Vasily '  hrazi: PRAISE THE SANGUINE!");
+	assert.strictEqual(t.phase, 1);
+	assert.strictEqual(t.nextSpecial, 1);
+	t.handleLine("[21:40:33] . ord Vasily '  hrazi: Your mind betrays you!");
+	assert.strictEqual(t.nextSpecial, 2);
+	t.handleLine("[21:40:48] . ord Vasily '  hrazi: Drown in Blood!");
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
