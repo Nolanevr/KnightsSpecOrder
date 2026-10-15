@@ -7,6 +7,7 @@ An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbo
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
 - When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
+- Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 
 | Phase | Order (Lady + Lord) |
 | --- | --- |
@@ -36,6 +37,14 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
   - **Copy log** / **Clear log**: copy the whole log (oldest line first) to paste it somewhere, or empty it before a kill.
   - **Simulate a chat line**: type a line to test the config without being at the boss. This also works in a normal browser.
 
+## Phase marker
+
+Once a kill starts (or any boss line is read), the app searches the whole game screen about once a second for the boss bar's "Phase: N" box, since it can be anywhere and only appears ~10 seconds into the kill. When it's found the status line says "phase marker found" and the box is briefly outlined in green; from then on only that small area is read, and the panel follows the number shown. When the box disappears at the end of the kill, the app forgets it and searches again next kill. **Find chat** also starts a search straight away.
+
+The ◀ / ▶ buttons still work: a phase picked by hand stays until the marker next changes.
+
+The marker is matched against the default interface scaling; with a different scaling it won't be found and phases fall back to chat lines and the arrows.
+
 ## Filling in the boss data
 
 All boss data is in [`config.js`](config.js).
@@ -52,6 +61,6 @@ Matching ignores capitalisation, punctuation, spaces and the timestamp, and a pa
 The app is plain HTML/JS with no build step. The Alt1 libraries load from unpkg (`alt1@0.1.3`).
 
 ```sh
-node --test test/          # tests for the phase/special logic in tracker.js
+node --test test/*.test.js  # tests for the phase/special logic and the phase marker
 python3 -m http.server     # then open http://localhost:8000 to try the UI
 ```

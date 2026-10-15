@@ -14,6 +14,15 @@
 	var showChatEl = el("show-chat");
 	var chatboxSelectEl = el("chatbox-select");
 
+	// The on-screen "Phase: N" marker. It only shows up during a kill and can be anywhere
+	// on screen, so it's searched for (about once a second) while a fight is going on,
+	// then only its small area is read until it disappears again.
+	var MARKER_SEARCH_MS = 1000;
+	var MARKER_ACTIVE_MS = 10 * 60 * 1000; // keep searching this long after the last boss line
+	var MARKER_LOST_READS = 8; // forget the marker after this many failed reads in a row
+	var phaseFont = null;
+	var marker = { pos: null, misses: 0, lastPhase: null, lastSearch: 0, activeUntil: 0 };
+
 	function render() {
 		var phase = tracker.currentPhase();
 		el("phase-name").textContent = phase.name;
@@ -60,6 +69,7 @@
 	function handleChatLine(text) {
 		var result = tracker.handleLine(text);
 		if (result) {
+			fightActivity();
 			log(result + "  ←  " + text, true);
 			render();
 		} else if (showChatEl.checked) {
@@ -102,14 +112,65 @@
 		return true;
 	}
 
+	function fightActivity() {
+		marker.activeUntil = Date.now() + MARKER_ACTIVE_MS;
+	}
+
+	function markerStatus() {
+		if (!phaseFont) { return ""; }
+		if (marker.pos) { return " \u00b7 phase marker found"; }
+		return Date.now() < marker.activeUntil ? " \u00b7 looking for phase marker" : "";
+	}
+
+	function trackPhaseMarker() {
+		if (!phaseFont) { return; }
+		if (marker.pos) {
+			var x0 = Math.max(0, marker.pos.x - 4), y0 = Math.max(0, marker.pos.y - 14);
+			var img = A1lib.capture(x0, y0, 90, 20);
+			var phase = img && PhaseMarker.read(img, marker.pos.x - x0, marker.pos.y - y0, OCR, phaseFont);
+			if (phase == null) {
+				if (++marker.misses >= MARKER_LOST_READS) {
+					marker.pos = null;
+					marker.lastPhase = null;
+					log("Phase marker gone");
+				}
+				return;
+			}
+			marker.misses = 0;
+			fightActivity();
+			// Only act when the marker changes, so the arrow buttons can still override it.
+			if (phase != marker.lastPhase) {
+				marker.lastPhase = phase;
+				if (phase - 1 != tracker.phase && phase - 1 < tracker.phaseCount()) {
+					tracker.setPhase(phase - 1);
+					render();
+					log("Entered " + tracker.currentPhase().name + "  \u2190  screen marker", true);
+				}
+			}
+			return;
+		}
+		var now = Date.now();
+		if (now > marker.activeUntil || now - marker.lastSearch < MARKER_SEARCH_MS) { return; }
+		marker.lastSearch = now;
+		var screen = A1lib.captureHoldFullRs();
+		var pos = screen && PhaseMarker.find(screen.toData());
+		if (pos) {
+			marker.pos = pos;
+			marker.misses = 0;
+			alt1.overLayRect(A1lib.mixColor(76, 255, 106), pos.x - 4, pos.y - 14, 70, 20, 2000, 2);
+			log("Phase marker found");
+		}
+	}
+
 	function tick() {
 		if (!alt1.rsLinked) { setStatus("RuneScape not detected", "warn"); return; }
+		trackPhaseMarker();
 		if (!reader.pos) {
-			if (!findChat()) { setStatus("Searching for chatbox…", "warn"); return; }
+			if (!findChat()) { setStatus("Searching for chatbox…" + markerStatus(), "warn"); return; }
 		}
 		var lines = reader.read();
-		if (lines == null) { setStatus("Chatbox found, waiting for text…", "ok"); return; }
-		setStatus("Reading chat", "ok");
+		if (lines == null) { setStatus("Chatbox found, waiting for text…" + markerStatus(), "ok"); return; }
+		setStatus("Reading chat" + markerStatus(), "ok");
 		lines.forEach(function (line) { handleChatLine(line.text); });
 	}
 
@@ -128,6 +189,7 @@
 			return;
 		}
 		createReader();
+		phaseFont = (typeof Alt1Fonts != "undefined" && Alt1Fonts.chatbox && Alt1Fonts.chatbox["12pt"]) || null;
 		setInterval(function () {
 			try { tick(); } catch (e) { setStatus("Error: " + e.message, "warn"); console.error(e); }
 		}, cfg.readIntervalMs);
@@ -140,6 +202,10 @@
 		if (!inAlt1 || !reader) { return; }
 		var found = findChat();
 		setStatus(found ? "Chatbox found" : "Chatbox not found", found ? "ok" : "warn");
+		// Also look for the phase marker straight away.
+		marker.pos = null;
+		marker.lastSearch = 0;
+		fightActivity();
 	};
 	chatboxSelectEl.onchange = function () {
 		reader.pos.mainbox = reader.pos.boxes[+chatboxSelectEl.value];
