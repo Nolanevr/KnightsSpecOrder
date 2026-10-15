@@ -28,13 +28,13 @@ var BOSS_CONFIG = {
 			"3 Prayers": ["SUFFER UNTO ME"],
 			"5 Prayers": [],
 			"Dash": ["Nowhere is beyond"],
-			"Magic Bleed": [],
+			"Magic Bleed": ["Your blood becomes"],
 		},
 		lord: {
 			"3 Prayers": ["FALL IN LINE"],
 			"5 Prayers": [],
-			"Blood Waves": [],
-			"Meatball": [],
+			"Blood Waves": ["Drown in Blood"],
+			"Meatball": ["BEAR THE CRIMSON"],
 			"Mind Flay": [],
 			"Blood Diamond": [],
 			"Blue Bar": [],
@@ -128,8 +128,9 @@ var BOSS_CONFIG = {
 		[226, 46, 46], [235, 48, 48], // red game messages (e.g. familiar warnings)
 	],
 
-	// The same phase/reset trigger is ignored if it shows up again within this many
-	// milliseconds (guards against the chat reader seeing one line twice).
+	// For chat lines without a timestamp: the same phase/reset trigger is ignored if it
+	// shows up again within this many milliseconds (guards against the chat reader
+	// seeing one line twice). Lines with a timestamp are only ever counted once.
 	triggerCooldownMs: 2000,
 
 	// How often the chatbox is read, in milliseconds (600 = one game tick).
