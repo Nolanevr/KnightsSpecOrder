@@ -20,13 +20,19 @@ function makeTracker() {
 	let time = 0;
 	const tracker = new SpecTracker(makeConfig(), () => time);
 	tracker.wait = ms => { time += ms; };
+	// The chat timestamp for the current fake time, starting at 12:00:00.
+	tracker.stamp = () => {
+		const s = 12 * 3600 + Math.floor(time / 1000);
+		const pad = n => String(n).padStart(2, "0");
+		return `[${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}]`;
+	};
 	return tracker;
 }
 
 // Both bosses use their half of the next step, then some time passes.
 function useStep(t, lady, lord) {
-	if (lady) { t.handleLine(`[12:00:00] Lady Ghrazi: ${lady}!`); }
-	if (lord) { t.handleLine(`[12:00:00] Lord Ghrazi: ${lord}!`); }
+	if (lady) { t.handleLine(`${t.stamp()} Lady Ghrazi: ${lady}!`); }
+	if (lord) { t.handleLine(`${t.stamp()} Lord Ghrazi: ${lord}!`); }
 	t.wait(20000);
 }
 
@@ -44,6 +50,48 @@ test("Lady's Dash line and Lord's partly-read line move phase 1 along", () => {
 	t.handleLine("[21:27:04] . ord Vasily '  hrazi: FALL IN LINE!");
 	time += 15000;
 	assert.ok(t.handleLine("[21:27:19] Lady Karmina Ghrazi: Nowhere is beyond"));
+	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("the phase 1 lines from a real kill follow the order", () => {
+	const t = new SpecTracker(shippedConfig);
+	const log = [
+		"[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.",
+		"[21:39:34] Lady Karmina Ghrazi: SUFFER UNTO ME!",
+		"[21:39:34] . ord Vasily ''' .razi: FALL IN LINE!",
+		"[21:39:49] Lady Karmina Ghrazi: Nowhere is beyond",
+		"[21:39:49] . ord Vasily '  hrazi: Drown in Blood!",
+	];
+	log.forEach(l => t.handleLine(l));
+	assert.strictEqual(t.nextSpecial, 2);
+	t.handleLine("[21:40:03] . ord Vasily '  hrazi: BEAR THE CRIMSON");
+	assert.strictEqual(t.nextSpecial, 0);
+	t.handleLine("[21:40:03] Lady Karmina Ghrazi: Your blood becomes");
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
+	const t = new SpecTracker(shippedConfig);
+	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
+	t.handleLine("[21:39:34] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	t.handleLine("[21:39:49] Lady Karmina Ghrazi: Nowhere is beyond");
+	assert.strictEqual(t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us."), null);
+	assert.strictEqual(t.handleLine("[21:39:34] Lady Karmina Ghrazi: SUFFER UNTO ME!"), null);
+	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("a new kill with a newer timestamp still restarts", () => {
+	const t = new SpecTracker(shippedConfig);
+	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
+	t.handleLine("[21:39:34] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.ok(t.handleLine("[21:45:10] Lady Karmina Ghrazi: Just give in. Join us."));
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("timestamps keep working past midnight", () => {
+	const t = new SpecTracker(shippedConfig);
+	t.handleLine("[23:59:55] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.ok(t.handleLine("[00:00:10] Lady Karmina Ghrazi: Nowhere is beyond"));
 	assert.strictEqual(t.nextSpecial, 2);
 });
 

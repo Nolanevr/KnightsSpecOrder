@@ -27,10 +27,21 @@
 		return false;
 	}
 
+	// The chat timestamp of a line in seconds since midnight, or null if it has none.
+	function chatTime(text) {
+		var m = String(text).match(/^\s*\[(\d{1,2}):(\d{2}):(\d{2})\]/);
+		return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : null;
+	}
+
 	function SpecTracker(config, now) {
 		this.config = config;
 		this.now = now || function () { return Date.now(); };
 		this.lastTrigger = {};
+		// Triggers already counted, by chat timestamp, and the newest timestamp counted.
+		// Kept across resets so that old lines read again never count twice.
+		this.seen = {};
+		this.seenCount = 0;
+		this.newestTime = null;
 		this.reset();
 	}
 
@@ -91,6 +102,24 @@
 		return true;
 	};
 
+	// Whether a trigger is new. Alt1's chat reader sometimes reports old lines again,
+	// so with a timestamp a trigger counts once, and never if it's older than the
+	// newest trigger already counted. Without a timestamp, fall back to a cooldown.
+	SpecTracker.prototype.isNew = function (time, key) {
+		if (time == null) { return this.cooledDown(key); }
+		if (this.newestTime != null) {
+			var diff = time - this.newestTime;
+			if (diff < -12 * 3600) { diff += 24 * 3600; } // past midnight
+			if (diff < 0) { return false; }
+		}
+		var id = time + "|" + key;
+		if (this.seen[id]) { return false; }
+		if (++this.seenCount > 500) { this.seen = {}; this.seenCount = 1; }
+		this.seen[id] = true;
+		this.newestTime = time;
+		return true;
+	};
+
 	// Which boss special a line is, as { boss, bossIndex, special }, or null.
 	SpecTracker.prototype.matchSpecial = function (line) {
 		var bosses = this.config.bosses;
@@ -111,23 +140,24 @@
 		var line = normalize(text);
 		if (!line) { return null; }
 		var cfg = this.config;
+		var time = chatTime(text);
 
 		if (matchesAny(line, cfg.resetLines)) {
-			if (!this.cooledDown("reset")) { return null; }
+			if (!this.isNew(time, "reset")) { return null; }
 			this.reset();
 			return "Fight started";
 		}
 
 		for (var p = 0; p < cfg.phases.length; p++) {
 			if (p != this.phase && matchesAny(line, cfg.phases[p].phaseLines)) {
-				if (!this.cooledDown("phase" + p)) { return null; }
+				if (!this.isNew(time, "phase" + p)) { return null; }
 				this.setPhase(p);
 				return "Entered " + this.currentPhase().name;
 			}
 		}
 
 		if (matchesAny(line, cfg.nextPhaseLines)) {
-			if (!this.cooledDown("nextphase")) { return null; }
+			if (!this.isNew(time, "nextphase")) { return null; }
 			this.nextPhase();
 			return "Entered " + this.currentPhase().name;
 		}
@@ -136,6 +166,7 @@
 		if (!match) { return null; }
 		var rotation = this.rotation();
 		var label = match.boss.name + ": " + match.special;
+		if (time != null && !this.isNew(time, "special:" + match.boss.id + ":" + match.special)) { return null; }
 
 		// The other boss's half of the step that was just used (or the same line read twice).
 		var last = this.lastUsed;
