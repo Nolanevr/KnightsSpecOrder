@@ -36,7 +36,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
   - **Show: Both / Lady / Lord**: both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with.
   - **6 specials: Standard / Side by side / Ultra compact**: how phases 4 and 5 are shown (see above).
   - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
-  - **Rename specials…**: type your own name for any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
+  - **Rename bosses and specials…**: type your own name for either boss or any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
 - **Tools** (at the bottom):
   - **Chatbox**: pick which chatbox to read, if you have more than one.

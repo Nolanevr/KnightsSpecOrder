@@ -30,11 +30,17 @@
 	//           and 4-6 side by side) or "ultra" (6 half-height rows, the space of 3)
 	//  compact: hide the buttons, status line and Tools
 	//  names:   the player's own names for specials, as { bossId: { special: name } }
-	var settings = { view: "both", layout: "ultra", compact: false, names: {} };
+	//  bossNames: the player's own names for the bosses, as { bossId: name }
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {} };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
 		return (settings.names[bossId] || {})[special] || special;
+	}
+	// The name to show for a boss, in full or short (for tight spaces): the player's own
+	// name if they set one, otherwise the configured name or its first word.
+	function bossName(boss, short) {
+		return settings.bossNames[boss.id] || (short ? boss.name.split(" ")[0] : boss.name);
 	}
 
 	function render() {
@@ -66,7 +72,7 @@
 			shown.forEach(function (b) {
 				var boss = cfg.bosses[b];
 				var name = document.createElement("span");
-				name.textContent = dense ? boss.name.split(" ")[0] : boss.name;
+				name.textContent = bossName(boss, dense);
 				name.style.color = boss.color;
 				head.appendChild(name);
 			});
@@ -250,6 +256,7 @@
 		if (settings.view != "both" && !cfg.bosses.some(function (b) { return b.id == settings.view; })) { settings.view = "both"; }
 		if (["standard", "side", "ultra"].indexOf(settings.layout) == -1) { settings.layout = "ultra"; }
 		if (!settings.names || typeof settings.names != "object") { settings.names = {}; }
+		if (!settings.bossNames || typeof settings.bossNames != "object") { settings.bossNames = {}; }
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -263,6 +270,10 @@
 	}
 	function applySettings() {
 		document.body.classList.toggle("compact", settings.compact);
+		Array.prototype.forEach.call(el("opt-view").children, function (button) {
+			var boss = cfg.bosses.filter(function (b) { return b.id == button.dataset.value; })[0];
+			if (boss) { button.textContent = bossName(boss, true); }
+		});
 		el("opt-compact").checked = settings.compact;
 		[["opt-view", "view"], ["opt-layout", "layout"]].forEach(function (pair) {
 			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
@@ -272,39 +283,56 @@
 		saveSettings();
 		render();
 	}
-	segmented(el("opt-view"), "view", [["both", "Both"]].concat(cfg.bosses.map(function (b) { return [b.id, b.name.split(" ")[0]]; })));
+	segmented(el("opt-view"), "view", [["both", "Both"]].concat(cfg.bosses.map(function (b) { return [b.id, bossName(b, true)]; })));
 	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
 	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
 
-	// Rename panel: a box per special, grouped by boss. Empty means the original name.
+	// Rename panel: a box per boss and per special. Empty means the original name.
+	function renameRow(list, original, current, onChange) {
+		var row = document.createElement("label");
+		row.className = "rename-row";
+		var label = document.createElement("span");
+		label.textContent = original;
+		var input = document.createElement("input");
+		input.maxLength = 24;
+		input.placeholder = original;
+		input.value = current || "";
+		input.oninput = function () {
+			var name = input.value.trim();
+			onChange(name && name != original ? name : null);
+			saveSettings();
+			applySettings();
+		};
+		row.appendChild(label);
+		row.appendChild(input);
+		list.appendChild(row);
+		return input;
+	}
 	function buildRenameList() {
 		var list = el("rename-list");
 		list.innerHTML = "";
+		var titles = {};
+		var heading = document.createElement("div");
+		heading.className = "rename-boss";
+		heading.textContent = "Bosses";
+		list.appendChild(heading);
 		cfg.bosses.forEach(function (boss) {
-			var title = document.createElement("div");
+			renameRow(list, boss.name, settings.bossNames[boss.id], function (name) {
+				if (name) { settings.bossNames[boss.id] = name; } else { delete settings.bossNames[boss.id]; }
+				titles[boss.id].textContent = bossName(boss);
+			});
+		});
+		cfg.bosses.forEach(function (boss) {
+			var title = titles[boss.id] = document.createElement("div");
 			title.className = "rename-boss";
-			title.textContent = boss.name;
+			title.textContent = bossName(boss);
 			title.style.color = boss.color;
 			list.appendChild(title);
 			Object.keys(cfg.specialLines[boss.id] || {}).forEach(function (special) {
-				var row = document.createElement("label");
-				row.className = "rename-row";
-				var original = document.createElement("span");
-				original.textContent = special;
-				var input = document.createElement("input");
-				input.maxLength = 24;
-				input.placeholder = special;
-				input.value = (settings.names[boss.id] || {})[special] || "";
-				input.oninput = function () {
+				renameRow(list, special, (settings.names[boss.id] || {})[special], function (name) {
 					var names = settings.names[boss.id] = settings.names[boss.id] || {};
-					var name = input.value.trim();
-					if (name && name != special) { names[special] = name; } else { delete names[special]; }
-					saveSettings();
-					render();
-				};
-				row.appendChild(original);
-				row.appendChild(input);
-				list.appendChild(row);
+					if (name) { names[special] = name; } else { delete names[special]; }
+				});
 			});
 		});
 	}
@@ -316,9 +344,10 @@
 	el("btn-rename-done").onclick = function () { el("rename").hidden = true; };
 	el("btn-rename-reset").onclick = function () {
 		settings.names = {};
+		settings.bossNames = {};
 		saveSettings();
 		buildRenameList();
-		render();
+		applySettings();
 	};
 	el("btn-options").onclick = function (e) {
 		e.stopPropagation();
