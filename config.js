@@ -37,7 +37,7 @@ var BOSS_CONFIG = {
 			"Meatball": ["BEAR THE CRIMSON"],
 			"Mind Flay": ["Your mind betrays you"],
 			"Blood Diamond": ["LET THE SANGUINE ENGULF YOU"],
-			"Blue Bar": [],
+			"Blue Bar": [], // no chat line: it just happens (first special of phase 4)
 		},
 	},
 

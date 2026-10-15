@@ -124,6 +124,16 @@ test("one boss's line on its own is enough, whichever boss it is", () => {
 	assert.strictEqual(t.nextSpecial, 1);
 });
 
+test("phase 4 carries on after the silent Blue Bar step", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(3);
+	assert.strictEqual(t.nextSpecial, 0); // Magic Bleed + Blue Bar, no line from Lord
+	time += 15000;
+	t.handleLine("[22:00:15] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.strictEqual(t.nextSpecial, 2); // 5 Prayers was step 2, so Dash + Blood Waves is next
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
