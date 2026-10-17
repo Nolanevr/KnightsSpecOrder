@@ -34,7 +34,10 @@
 	//  headers: "show" the boss names over the columns, or "tint" to hide them and colour
 	//           each special's text in its boss's colour instead
 	//  flash:   flash each special on screen when its chat line comes in
-	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", flash: true };
+	//  textPos: where the on-screen specials go, as { fx, fy }: the middle of the first
+	//           line as fractions of the game window's width and height, or null for
+	//           the default (below the character)
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", flash: true, textPos: null };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
@@ -153,6 +156,9 @@
 	// when he says it; with just the other boss shown (Lady's tank), that boss's own
 	// special (Dash) also appears beforehand and on its line as normal.
 	var FLASH_GROUP = "kso-flash";
+	var FLASH_MS = 300; // on a chat line the text swaps between white and its colour this often
+	var moving = false; // placing the text with Alt+1
+	var moved = 0; // when the text was last placed, to show it there for a moment
 	var flashing = { lines: null, key: null, start: 0 }; // the flash from the last chat line
 	var drawn = { key: null }; // what's on screen
 
@@ -210,21 +216,45 @@
 		return A1lib.mixColor(n >> 16, (n >> 8) & 255, n & 255);
 	}
 
+	// Sample text to show while the text is being placed.
+	function sampleLines() {
+		return [line(0, displayName(cfg.bosses[0].id, "Dash")), line(1, displayName(cfg.bosses[1].id, "Meatball"))];
+	}
+
 	// What should be on screen now: { key, lines, end }, or null.
 	function currentDisplay(now) {
+		var pos = textPosition();
+		var where = pos.x + "," + pos.y;
+		if (moving) {
+			// Redrawn now and then: overlays can't stay up for ever.
+			return { key: "move|" + where + "|" + Math.floor(now / 20000), lines: sampleLines(), end: now + 21000 };
+		}
+		if (now < moved + cfg.flashMs) {
+			return { key: "moved|" + moved + "|" + where, lines: sampleLines(), end: moved + cfg.flashMs };
+		}
 		if (flashing.lines && now < flashing.start + cfg.flashMs) {
-			return { key: "flash|" + flashing.start, lines: flashing.lines, end: flashing.start + cfg.flashMs };
+			// Swaps between white and the boss colours.
+			var n = Math.floor((now - flashing.start) / FLASH_MS);
+			var lines = n % 2 ? flashing.lines.map(function (l) { return { text: l.text, color: "#ffffff" }; }) : flashing.lines;
+			return { key: "flash|" + flashing.start + "|" + n, lines: lines, end: Math.min(now + FLASH_MS * 2, flashing.start + cfg.flashMs) };
 		}
 		var at = settings.flash ? tracker.warningTime() : null;
 		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
-		var lines = flashLines(tracker.nextSpecial);
+		lines = flashLines(tracker.nextSpecial);
 		if (!lines.length) { return null; }
 		// Once per special: the key changes when the next special does.
 		return { key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial, lines: lines, end: at + cfg.warningMs };
 	}
 
+	// Where the middle of the first line goes, in game window pixels.
+	function textPosition() {
+		var p = settings.textPos;
+		if (p) { return { x: Math.round(p.fx * alt1.rsWidth), y: Math.round(p.fy * alt1.rsHeight) }; }
+		return { x: Math.round(alt1.rsWidth / 2), y: Math.round(alt1.rsHeight * (0.5 + cfg.flashBelow)) };
+	}
+
 	function drawLines(lines, ms) {
-		var x = Math.round(alt1.rsWidth / 2), y = Math.round(alt1.rsHeight * (0.5 + cfg.flashBelow));
+		var pos = textPosition(), x = pos.x, y = pos.y;
 		var lineHeight = Math.round(cfg.flashTextSize * 1.2);
 		alt1.overLaySetGroup(FLASH_GROUP);
 		lines.forEach(function (line, i) {
@@ -243,10 +273,39 @@
 		var show = currentDisplay(now);
 		var key = show ? show.key : null;
 		if (key == drawn.key) { return; }
-		if (drawn.key != null) { alt1.overLayClearGroup(FLASH_GROUP); }
-		drawn = { key: key };
-		// Drawn once, steady, for as long as it lasts.
+		// Swapped in one go (frozen while it's redrawn), so it doesn't blink.
+		var freeze = !!alt1.overLayFreezeGroup;
+		if (freeze) { alt1.overLayFreezeGroup(FLASH_GROUP); }
+		alt1.overLayClearGroup(FLASH_GROUP);
 		if (show) { drawLines(show.lines, show.end - now); }
+		if (freeze) { alt1.overLayRefreshGroup(FLASH_GROUP); }
+		drawn = { key: key };
+	}
+
+	// Placing the text: point the mouse where it should go and press Alt+1.
+	function startMoving() {
+		moving = true;
+		el("options").hidden = true;
+		el("move").hidden = false;
+		updateFlash();
+	}
+	function stopMoving() {
+		moving = false;
+		el("move").hidden = true;
+		updateFlash();
+	}
+	function placeText(pos) {
+		settings.textPos = pos;
+		saveSettings();
+		moved = Date.now();
+		stopMoving();
+	}
+	if (inAlt1 && typeof A1lib != "undefined" && A1lib.on) {
+		A1lib.on("alt1pressed", function (e) {
+			var p = e.mouseRs;
+			if (!moving || !p || p.x < 0 || p.y < 0 || p.x >= alt1.rsWidth || p.y >= alt1.rsHeight) { return; }
+			placeText({ fx: p.x / alt1.rsWidth, fy: p.y / alt1.rsHeight });
+		});
 	}
 
 	function setStatus(text, type) {
@@ -413,6 +472,8 @@
 		if (!settings.bossNames || typeof settings.bossNames != "object") { settings.bossNames = {}; }
 		if (settings.headers != "tint") { settings.headers = "show"; }
 		settings.flash = settings.flash !== false;
+		var p = settings.textPos;
+		if (!p || !(p.fx >= 0 && p.fx <= 1 && p.fy >= 0 && p.fy <= 1)) { settings.textPos = null; }
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -505,6 +566,9 @@
 		el("rename").hidden = false;
 	};
 	el("btn-rename-done").onclick = function () { el("rename").hidden = true; };
+	el("btn-move").onclick = startMoving;
+	el("btn-move-done").onclick = stopMoving;
+	el("btn-move-reset").onclick = function () { placeText(null); };
 	el("btn-rename-reset").onclick = function () {
 		settings.names = {};
 		settings.bossNames = {};
