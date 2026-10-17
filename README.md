@@ -6,7 +6,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 
 - Phase 4 has 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
-- About 10 seconds after each special (6 in phase 5), the next one appears in large writing in the middle of the screen, above your character: Lady's in red, Lord's in blue underneath. When its chat line comes in, it flashes. See [Flash](#flash).
+- 18 game ticks after each special (14 in phase 5), the next one appears in large writing in the middle of the screen, above your character: Lady's in red, Lord's in blue underneath. When its chat line comes in, it flashes. See [Flash](#flash).
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
@@ -89,7 +89,7 @@ Turn on **Markers** to check what it sees: a large square with a white border ov
 
 The specials are written on screen one line per boss in the boss's colour: Lady's in red, Lord's in blue underneath.
 
-- **Before a special**: the next step's specials appear (steady) 10 seconds after the previous special (`warnAfterMs` in [`config.js`](config.js)), about 2 seconds before it. In phase 5 there are only 3 auto-attacks between specials, so it's 6 seconds (the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after Lady's "Just give in. Join us." (`firstWarnAfterMs`), and phase 4's first one 2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
+- **Before a special**: the next step's specials appear (steady) 18 game ticks (10.8 seconds) after the previous special (`warnAfterMs` in [`config.js`](config.js)). In phase 5 there are only 3 auto-attacks between specials, so it's 14 ticks (8.4 seconds, the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after Lady's "Just give in. Join us." (`firstWarnAfterMs`), and phase 4's first one 1.2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
 - **When its chat line comes in**: the step's specials flash for 3 seconds (`flashMs`).
 
 It works in every phase and follows **Show** in the options:

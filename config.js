@@ -110,8 +110,8 @@ var BOSS_CONFIG = {
 		{
 			// Carries on from wherever Phase 4 was.
 			name: "Phase 5",
-			// Only 3 auto-attacks between specials, so the next one shows sooner.
-			warnAfterMs: 6 * 1000,
+			// Only 3 auto-attacks between specials, so the next one shows sooner: 14 ticks.
+			warnAfterMs: 14 * 600,
 			phaseLines: [],
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
@@ -134,11 +134,11 @@ var BOSS_CONFIG = {
 	silentStepDelayMs: 20 * 600,
 	silentStepGraceMs: 3 * 600,
 
-	// The next step's specials appear on screen this long after the previous special
-	// (specials are 20 ticks apart, so ~2 seconds before it; a phase can set its own
-	// warnAfterMs), and stay until it's used or for warningMs. The first special of a kill appears firstWarnAfterMs after
-	// Lady's new-kill line.
-	warnAfterMs: 10 * 1000,
+	// The next step's specials appear on screen this long after the previous special (18
+	// ticks; a phase can set its own warnAfterMs), and stay until it's used or for
+	// warningMs. The first special of a kill appears firstWarnAfterMs after Lady's
+	// new-kill line.
+	warnAfterMs: 18 * 600,
 	warningMs: 5000,
 	firstWarnAfterMs: 10 * 1000,
 	// When a special's chat line comes in, its step's specials flash for flashMs.
