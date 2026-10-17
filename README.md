@@ -11,7 +11,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
 - In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and flashes which one it is (e.g. **MEATBALL**).
-- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 20 game ticks (12 seconds) after the previous special, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
+- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
 - When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 

@@ -133,7 +133,8 @@
 	SpecTracker.prototype.tick = function () {
 		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
 		var due = null;
-		if (last && cfg.silentStepDelayMs) { due = last.time + cfg.silentStepDelayMs; }
+		var delay = this.currentPhase().silentStepDelayMs || cfg.silentStepDelayMs;
+		if (last && delay) { due = last.time + delay; }
 		else if (!last && this.phaseStartTime != null && startDelay) { due = this.phaseStartTime + startDelay; }
 		if (due == null || !this.isSilentStep(this.nextSpecial)) { return null; }
 		if (this.now() < due + (cfg.silentStepGraceMs || 0)) { return null; }

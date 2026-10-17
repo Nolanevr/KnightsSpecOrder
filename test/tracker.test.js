@@ -172,7 +172,7 @@ test("the silent Blue Bar step is assumed used when its time passes (Lord's tank
 	t.setNextSpecial(5);
 	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 6
 	assert.strictEqual(t.nextSpecial, 0); // step 1: Magic Bleed + Blue Bar, no line for Lord's tank
-	time += 13000; // Blue Bar is 20 ticks (12s) after the previous special
+	time += 15500; // in phase 4 Blue Bar is 24 ticks (14.4s) after the previous special, plus grace
 	assert.strictEqual(t.tick(), null);
 	time += 1000;
 	assert.match(t.tick(), /Step 1/);
@@ -180,6 +180,20 @@ test("the silent Blue Bar step is assumed used when its time passes (Lord's tank
 	time += 15000;
 	t.handleLine("[22:00:30] . ord Vasily '  hrazi: FALL IN LINE!"); // step 2
 	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("in phase 5 the silent Blue Bar step is assumed used 20 ticks after the previous special", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	t.setNextSpecial(2);
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
+	assert.strictEqual(t.nextSpecial, 0); // Magic Bleed + Blue Bar
+	time += 13500; // 20 ticks (12s), plus grace
+	assert.strictEqual(t.tick(), null);
+	time += 500;
+	assert.match(t.tick(), /Step 1/);
+	assert.strictEqual(t.nextSpecial, 1);
 });
 
 test("Lady's line for the Blue Bar step still counts once for her tank", () => {

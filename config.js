@@ -95,6 +95,8 @@ var BOSS_CONFIG = {
 			// The first special (Magic Bleed + Blue Bar, silent for Lord's tank) happens 22
 			// game ticks after the phase marker turns to Phase 4.
 			silentStartDelayMs: 22 * 600,
+			// After that, Blue Bar comes 24 ticks after the previous special.
+			silentStepDelayMs: 24 * 600,
 			phaseLines: [],
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
@@ -126,8 +128,9 @@ var BOSS_CONFIG = {
 	pairWindowMs: 6000,
 
 	// A step with no chat line for this player (Blue Bar, with Lady's half only shown to
-	// her tank) happens 20 game ticks (12 seconds) after the previous special. It's
-	// assumed used once that, plus a few ticks of grace, has passed without a line.
+	// her tank) happens 20 game ticks (12 seconds) after the previous special (a phase
+	// can set its own silentStepDelayMs). It's assumed used once that, plus a few ticks
+	// of grace, has passed without a line.
 	silentStepDelayMs: 20 * 600,
 	silentStepGraceMs: 3 * 600,
 
