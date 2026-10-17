@@ -95,6 +95,8 @@ var BOSS_CONFIG = {
 			// The first special (Magic Bleed + Blue Bar, silent for Lord's tank) happens 22
 			// game ticks after the phase marker turns to Phase 4.
 			silentStartDelayMs: 22 * 600,
+			// After that, Blue Bar comes 24 ticks after the previous special.
+			silentStepDelayMs: 24 * 600,
 			phaseLines: [],
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
@@ -108,12 +110,14 @@ var BOSS_CONFIG = {
 		{
 			// Carries on from wherever Phase 4 was.
 			name: "Phase 5",
+			// Only 3 auto-attacks between specials, so the next one shows sooner.
+			warnAfterMs: 6 * 1000,
 			phaseLines: [],
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
 				// Lord picks one of these at random; it flashes on screen when he says it.
-				["Dash", ["Blood Waves", "Blood Diamond", "Mind Flay"]],
+				["Dash", ["Blood Waves", "Blood Diamond", "Meatball"]],
 			],
 		},
 	],
@@ -124,22 +128,26 @@ var BOSS_CONFIG = {
 	pairWindowMs: 6000,
 
 	// A step with no chat line for this player (Blue Bar, with Lady's half only shown to
-	// her tank) happens 20 game ticks (12 seconds) after the previous special. It's
-	// assumed used once that, plus a few ticks of grace, has passed without a line.
+	// her tank) happens 20 game ticks (12 seconds) after the previous special (a phase
+	// can set its own silentStepDelayMs). It's assumed used once that, plus a few ticks
+	// of grace, has passed without a line.
 	silentStepDelayMs: 20 * 600,
 	silentStepGraceMs: 3 * 600,
 
-	// The next special flashes in large red text in the middle of the screen this long
-	// after the previous special (specials are 20 ticks apart, so ~2 seconds' warning),
-	// for warningMs or until it's used.
+	// The next step's specials appear on screen this long after the previous special
+	// (specials are 20 ticks apart, so ~2 seconds before it; a phase can set its own
+	// warnAfterMs), and stay until it's used or for warningMs. The first special of a kill appears firstWarnAfterMs after
+	// Lady's new-kill line.
 	warnAfterMs: 10 * 1000,
-	warningMs: 3000,
-	// Where the warning is drawn: centred, this fraction of the game window's height
-	// above its middle, where your character is (about 10 tiles above them).
-	warningHeight: 0.25,
-	warningTextSize: 40,
-	// How long a boss's random special (Lord's in phase 5) flashes when it's said.
-	randomFlashMs: 3000,
+	warningMs: 5000,
+	firstWarnAfterMs: 10 * 1000,
+	// When a special's chat line comes in, its step's specials flash for flashMs.
+	// Both are drawn one line per boss in the boss's colour, centred and this fraction
+	// of the game window's height above its middle, where your character is (about 10
+	// tiles above them).
+	flashMs: 3000,
+	flashHeight: 0.25,
+	flashTextSize: 40,
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.

@@ -6,12 +6,12 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 
 - Phase 4 has 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
-- About 10 seconds after each special (2 seconds before the next one), the next step's specials flash in large red writing in the middle of the screen, above your character, until they're used. See [Warning](#warning).
+- About 10 seconds after each special (6 in phase 5), the next one appears in large writing in the middle of the screen, above your character: Lady's in red, Lord's in blue underneath. When its chat line comes in, it flashes. See [Flash](#flash).
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
-- In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Mind Flay. The panel shows it as **Random**; when he says its line, the app counts it and flashes which one it is (e.g. **BLOOD DIAMOND**) on screen.
-- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 20 game ticks (12 seconds) after the previous special, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
+- In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and flashes which one it is (e.g. **MEATBALL**).
+- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
 - When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 
@@ -21,7 +21,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 | 2 | 3 Prayers + 3 Prayers → Dash + Mind Flay → Magic Bleed + Blood Waves |
 | 3 | 3 Prayers + 3 Prayers → Dash + Blood Waves → Magic Bleed + Blood Diamond |
 | 4 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Meatball → 5 Prayers + 5 Prayers → Dash + Blood Waves |
-| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Random (Blood Waves, Blood Diamond or Mind Flay) |
+| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Random (Blood Waves, Blood Diamond or Meatball) |
 
 ## Installing in Alt1
 
@@ -40,7 +40,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
   - **Show: Both / Lady / Lord**: both bosses' specials or only one boss's. Detection always uses both bosses' lines, and phase 3 always shows both because it's random which boss you end up with. With **Lady** shown, Lord's Meatball and Blue Bar are still shown (in blue, next to Lady's special in the same step), since they matter to Lady's tank too.
   - **6 specials: Standard / Side by side / Ultra compact**: how phase 4 is shown (see above).
   - **Boss names: Show / Hide, colour the text**: hide the boss names over the columns and colour each special in its boss's colour instead (red for Lady, blue for Lord).
-  - **Flash specials on screen**: the warning before each special, and Lord's random special in phase 5 when he says it (on by default).
+  - **Flash specials on screen**: show each special shortly before it, and flash it when its chat line comes in (on by default).
   - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
   - **Rename bosses and specials…**: type your own name for either boss or any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
@@ -85,13 +85,23 @@ Turn on **Markers** to check what it sees: a large square with a white border ov
 - A droplet flying at your partner that passes right over you can show up briefly, until it's clear it's going past you.
 - The distances and speeds in `bolt/config.lua` are estimates and haven't been tuned in game yet; if droplets are missed or counted for the wrong player, adjust `ownRadius`, `minSideSpeed` and the colour settings there.
 
-## Warning
+## Flash
 
-Specials come 20 game ticks (12 seconds) apart, so 10 seconds after a special (`warnAfterMs` in [`config.js`](config.js)) the app flashes the next step's specials, e.g. **DASH + BLOOD WAVES**, in large red writing for up to 3 seconds (`warningMs`), and stops as soon as they're used. It uses the names shown in the panel, so it follows **Show: Lady / Lord** and any names you've renamed. In phase 4 the first warning comes 2 seconds before the silent Magic Bleed + Blue Bar step.
+The specials are written on screen one line per boss in the boss's colour: Lady's in red, Lord's in blue underneath.
 
-In phase 5 the warning for Lord's random special reads **DASH + RANDOM**. As soon as he says its line, the writing changes to the one he picked, e.g. **BLOOD DIAMOND**, for 3 seconds (`randomFlashMs`).
+- **Before a special**: the next step's specials appear (steady) 10 seconds after the previous special (`warnAfterMs` in [`config.js`](config.js)), about 2 seconds before it. In phase 5 there are only 3 auto-attacks between specials, so it's 6 seconds (the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after Lady's "Just give in. Join us." (`firstWarnAfterMs`), and phase 4's first one 2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
+- **When its chat line comes in**: the step's specials flash for 3 seconds (`flashMs`).
 
-Alt1 can't see where your character is, so the writing is drawn in the middle of the game window horizontally, a quarter of the window's height above its middle, which is about 10 tiles above your character at the usual zoom (`warningHeight`; the text size is `warningTextSize`). It needs Alt1's **overlay** permission.
+It works in every phase and follows **Show** in the options:
+
+- **Both**: both bosses' specials, e.g. **DASH** above **BLOOD WAVES**.
+- **Lady**: her special, plus Lord's Meatball or Blue Bar when it's in the same step, e.g. **MAGIC BLEED** above **MEATBALL**.
+- **Lord**: his special.
+- In **phase 3** both bosses' specials always flash.
+
+Lady's and Lord's lines for the same step count as one flash. In phase 5, Lord's third special shows as **RANDOM** beforehand (and while flashing if Lady's Dash line comes first), and changes to the one he picked, e.g. **MEATBALL**, when he says it. With **Lady** shown it's **MEATBALL?** until he says it, then **MEATBALL** if he picked it, or nothing if he picked one of the others. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) don't flash.
+
+Alt1 can't see where your character is, so the writing is centred on the game window, a quarter of the window's height above its middle, which is about 10 tiles above your character at the usual zoom (`flashHeight`; the text size is `flashTextSize`). It needs Alt1's **overlay** permission.
 
 ## Phase marker
 
@@ -106,7 +116,7 @@ The marker is matched against the default interface scaling; with a different sc
 All boss data is in [`config.js`](config.js).
 
 - `specialLines`: what each boss yells for each special. Fill these in once; they're used in every phase. Leave the speaker's name out: it's drawn in a dark colour that's harder for Alt1 to read than the message.
-- `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs. A list of specials in place of one, like Lord's `["Blood Waves", "Blood Diamond", "Mind Flay"]` in phase 5, means the boss picks one at random; any of their lines counts, and the one said flashes on screen.
+- `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs. A list of specials in place of one, like Lord's `["Blood Waves", "Blood Diamond", "Meatball"]` in phase 5, means the boss picks one at random; any of their lines counts, and the one said flashes on screen.
 
 Also fill in each phase's `phaseLines`: what is yelled when the fight enters that phase. If the same thing is said at every phase change, put it in `nextPhaseLines` instead.
 

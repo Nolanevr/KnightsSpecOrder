@@ -60,6 +60,8 @@
 		this.nextSpecial = 0;
 		this.lastUsed = null;
 		this.phaseStartTime = null;
+		// When the kill started (Lady's new-kill line), or null if not known.
+		this.fightStartTime = null;
 		// The last special recognised: { bossIndex, special, step, random }, where random
 		// means it was one boss's random pick for that step.
 		this.lastMatch = null;
@@ -131,7 +133,8 @@
 	SpecTracker.prototype.tick = function () {
 		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
 		var due = null;
-		if (last && cfg.silentStepDelayMs) { due = last.time + cfg.silentStepDelayMs; }
+		var delay = this.currentPhase().silentStepDelayMs || cfg.silentStepDelayMs;
+		if (last && delay) { due = last.time + delay; }
 		else if (!last && this.phaseStartTime != null && startDelay) { due = this.phaseStartTime + startDelay; }
 		if (due == null || !this.isSilentStep(this.nextSpecial)) { return null; }
 		if (this.now() < due + (cfg.silentStepGraceMs || 0)) { return null; }
@@ -142,15 +145,20 @@
 		return "Step " + (index + 1) + " (" + stepLabel(this.rotation()[index]) + ") has no chat line, assumed used";
 	};
 
-	// When to warn that the next special is coming: warnAfterMs after the previous
-	// special, or, in a phase that opens with a silent step, the same time before that
-	// step is due. Null when there's nothing to warn about.
+	// When to show that the next special is coming: warnAfterMs (the phase's own, if it
+	// has one) after the previous special; in a phase that opens with a silent step, the
+	// same time before that step is due; and for the first special of a kill,
+	// firstWarnAfterMs after the kill started. Null when there's nothing to go on.
 	SpecTracker.prototype.warningTime = function () {
-		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
-		if (!cfg.warnAfterMs) { return null; }
-		if (last) { return last.time + cfg.warnAfterMs; }
+		var cfg = this.config, last = this.lastUsed, phase = this.currentPhase();
+		var warnAfter = phase.warnAfterMs || cfg.warnAfterMs, startDelay = phase.silentStartDelayMs;
+		if (!warnAfter) { return null; }
+		if (last) { return last.time + warnAfter; }
 		if (this.phaseStartTime != null && startDelay && cfg.silentStepDelayMs) {
-			return this.phaseStartTime + startDelay - (cfg.silentStepDelayMs - cfg.warnAfterMs);
+			return this.phaseStartTime + startDelay - (cfg.silentStepDelayMs - warnAfter);
+		}
+		if (this.fightStartTime != null && this.phase == 0 && cfg.firstWarnAfterMs) {
+			return this.fightStartTime + cfg.firstWarnAfterMs;
 		}
 		return null;
 	};
@@ -207,6 +215,7 @@
 		if (matchesAny(line, cfg.resetLines)) {
 			if (!this.isNew(time, "reset")) { return null; }
 			this.reset();
+			this.fightStartTime = this.now();
 			return "Fight started";
 		}
 

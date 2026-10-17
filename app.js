@@ -33,9 +33,8 @@
 	//  bossNames: the player's own names for the bosses, as { bossId: name }
 	//  headers: "show" the boss names over the columns, or "tint" to hide them and colour
 	//           each special's text in its boss's colour instead
-	//  warning: flash the next special on screen shortly before it happens, and a
-	//           boss's random special when it's used
-	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", warning: true };
+	//  flash:   flash each special on screen when its chat line comes in
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", flash: true };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
@@ -50,9 +49,16 @@
 	function optionNames(bossId, entry) {
 		return SpecTracker.options(entry).map(function (s) { return displayName(bossId, s); }).join(" / ");
 	}
-	// The other boss's specials in a step that also matter to a boss's tank (alsoShow).
-	function alsoShown(boss, entry) {
-		return SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
+	// The other boss's specials in a step that also matter to a boss's tank (alsoShow),
+	// by name, or null. When the other boss picks one at random, it's only maybe (e.g.
+	// "Meatball?") until `said` (the special they said) is known; then it's the pick if
+	// that matters, otherwise nothing.
+	function alsoShownName(boss, other, entry, said) {
+		var extras = SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
+		if (!extras.length) { return null; }
+		if (!Array.isArray(entry)) { return optionNames(other.id, extras); }
+		if (said) { return extras.indexOf(said) != -1 ? displayName(other.id, said) : null; }
+		return optionNames(other.id, extras) + "?";
 	}
 	// The name to show for a boss, in full or short (for tight spaces): the player's own
 	// name if they set one, otherwise the configured name or its first word.
@@ -122,11 +128,11 @@
 				// tank, in the other boss's colour.
 				if (shown.length == 1) {
 					cfg.bosses.forEach(function (other, o) {
-						var extras = o != b ? alsoShown(cfg.bosses[b], step[o]) : [];
-						if (extras.length) {
+						var name = o != b ? alsoShownName(cfg.bosses[b], other, step[o], null) : null;
+						if (name) {
 							var extra = document.createElement("span");
 							extra.className = "extra";
-							extra.textContent = optionNames(other.id, extras);
+							extra.textContent = name;
 							extra.style.color = other.color;
 							cell.appendChild(extra);
 						}
@@ -140,69 +146,118 @@
 		specialsEl.replaceChildren.apply(specialsEl, items);
 	}
 
-	// Large red writing flashed above the character (the middle of the game window):
-	//  - the warning before each special: the next step's specials, from warnAfterMs after
-	//    the previous special until it's used, for at most warningMs;
-	//  - a boss's random special (Lord's in phase 5) when its line is said, for
-	//    randomFlashMs. This one takes over from the warning.
-	var FLASH_GROUP = "kso-warning";
+	// Specials in large writing above the character (the middle of the game window), one
+	// line per boss in the boss's colour: the bosses shown in the panel (with Lady shown,
+	// also Lord's Meatball or Blue Bar in that step; in phase 3 both).
+	//  - The next step's specials appear, steady, warnAfterMs after the previous special
+	//    (and the first special of a kill firstWarnAfterMs after it starts), until used.
+	//  - When a special's chat line comes in, its step's specials flash for flashMs. For a
+	//    random pick (Lord in phase 5), the one he said.
+	var FLASH_GROUP = "kso-flash";
 	var FLASH_MS = 300;
-	var flashing = { key: null, shown: -1 };
-	var announcement = null; // { text, start }
+	var flashing = { lines: null, key: null, start: 0 }; // the flash from the last chat line
+	var drawn = { key: null, blink: -1 }; // what's on screen
+	var pick = null; // { used, bossIndex, special }: a random special said, and for which use of its step
 
-	function warningText() {
-		var step = tracker.rotation()[tracker.nextSpecial];
+	// The random special a boss said in the step just used, or null if not known.
+	function saidPick(bossIndex) {
+		return pick && pick.used === tracker.lastUsed && pick.bossIndex == bossIndex ? pick.special : null;
+	}
+
+	function flashName(bossIndex, entry) {
+		var bossId = cfg.bosses[bossIndex].id;
+		if (!Array.isArray(entry)) { return displayName(bossId, entry); }
+		var said = saidPick(bossIndex);
+		return said ? displayName(bossId, said) : "Random";
+	}
+
+	function flashLines(stepIndex) {
+		var step = tracker.rotation()[stepIndex];
 		var shown = shownBosses(tracker.currentPhase());
-		var names = shown.map(function (b) { return entryName(cfg.bosses[b].id, step[b]); });
+		var lines = shown.map(function (b) {
+			return { text: flashName(b, step[b]), color: cfg.bosses[b].color };
+		});
 		// With one boss shown, the other boss's specials that matter to this boss's tank.
 		if (shown.length == 1) {
 			cfg.bosses.forEach(function (other, o) {
-				var extras = o != shown[0] ? alsoShown(cfg.bosses[shown[0]], step[o]) : [];
-				if (extras.length) { names.push(optionNames(other.id, extras)); }
+				var name = o != shown[0] ? alsoShownName(cfg.bosses[shown[0]], other, step[o], saidPick(o)) : null;
+				if (name) { lines.push({ text: name, color: other.color }); }
 			});
 		}
-		return names.join(" + ").toUpperCase();
+		lines.forEach(function (line) { line.text = line.text.toUpperCase(); });
+		return lines;
 	}
 
-	// After a chat line was recognised: flash a boss's random special.
-	function announceRandom() {
+	function stopFlash() {
+		flashing = { lines: null, key: null, start: 0 };
+		updateFlash();
+	}
+
+	// After a chat line was recognised.
+	function flashSpecial() {
 		var m = tracker.lastMatch;
 		tracker.lastMatch = null;
-		if (!m || !m.random || !settings.warning) { return; }
-		announcement = { text: displayName(cfg.bosses[m.bossIndex].id, m.special).toUpperCase(), start: Date.now() };
+		if (!m) { return; }
+		if (m.random) { pick = { used: tracker.lastUsed, bossIndex: m.bossIndex, special: m.special }; }
+		if (!settings.flash) { return; }
+		var lines = flashLines(m.step);
+		var key = lines.map(function (line) { return line.text; }).join("|");
+		// The other boss's line for the same step: keep flashing, unless it changes the
+		// writing (a random pick that wasn't known yet).
+		if (key == flashing.key && Date.now() < flashing.start + cfg.flashMs) { return; }
+		flashing = { lines: lines, key: key, start: Date.now() };
+		updateFlash();
 	}
 
-	// What should be flashing now, or null.
-	function currentFlash(now) {
-		if (announcement && now < announcement.start + cfg.randomFlashMs) {
-			return { key: "random|" + announcement.start, text: announcement.text, start: announcement.start };
+	function hexColor(hex) {
+		var n = parseInt(hex.slice(1), 16);
+		return A1lib.mixColor(n >> 16, (n >> 8) & 255, n & 255);
+	}
+
+	// What should be on screen now: { key, lines, start, end, blink }, or null.
+	function currentDisplay(now) {
+		if (flashing.lines && now < flashing.start + cfg.flashMs) {
+			return { key: "flash|" + flashing.start, lines: flashing.lines, start: flashing.start, end: flashing.start + cfg.flashMs, blink: true };
 		}
-		var at = settings.warning ? tracker.warningTime() : null;
+		var at = settings.flash ? tracker.warningTime() : null;
 		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
 		// Once per special: the key changes when the next special does.
-		return { key: "warning|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial, text: warningText(), start: at };
+		return {
+			key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial,
+			lines: flashLines(tracker.nextSpecial), start: at, end: at + cfg.warningMs, blink: false,
+		};
+	}
+
+	function drawLines(lines, ms) {
+		var x = Math.round(alt1.rsWidth / 2), y = Math.round(alt1.rsHeight * (0.5 - cfg.flashHeight));
+		var lineHeight = Math.round(cfg.flashTextSize * 1.2);
+		alt1.overLaySetGroup(FLASH_GROUP);
+		lines.forEach(function (line, i) {
+			alt1.overLayTextEx(line.text, hexColor(line.color), cfg.flashTextSize, x, y + i * lineHeight, ms, "", true, true);
+		});
+		alt1.overLaySetGroup("");
 	}
 
 	function updateFlash() {
 		if (!inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
 		var now = Date.now();
-		var flash = currentFlash(now);
-		var key = flash ? flash.key : null;
-		if (key != flashing.key) {
-			if (flashing.shown >= 0) { alt1.overLayClearGroup(FLASH_GROUP); }
-			flashing = { key: key, shown: -1 };
+		var show = currentDisplay(now);
+		var key = show ? show.key : null;
+		if (key != drawn.key) {
+			if (drawn.key != null) { alt1.overLayClearGroup(FLASH_GROUP); }
+			drawn = { key: key, blink: -1 };
 		}
-		if (!flash) { return; }
-		// Shown for one FLASH_MS, hidden for the next.
-		var n = Math.floor((now - flash.start) / FLASH_MS);
-		if (n == flashing.shown) { return; }
-		flashing.shown = n;
-		if (n % 2) { return; }
-		alt1.overLaySetGroup(FLASH_GROUP);
-		alt1.overLayTextEx(flash.text, A1lib.mixColor(255, 40, 40), cfg.warningTextSize,
-			Math.round(alt1.rsWidth / 2), Math.round(alt1.rsHeight * (0.5 - cfg.warningHeight)),
-			FLASH_MS, "", true, true);
-		alt1.overLaySetGroup("");
+		if (!show) { return; }
+		// Steady: drawn once, for as long as it lasts.
+		if (!show.blink) {
+			if (drawn.blink < 0) { drawLines(show.lines, show.end - now); drawn.blink = 0; }
+			return;
+		}
+		// Flashing: shown for one FLASH_MS, hidden for the next.
+		var n = Math.floor((now - show.start) / FLASH_MS);
+		if (n == drawn.blink) { return; }
+		drawn.blink = n;
+		if (n % 2 == 0) { drawLines(show.lines, FLASH_MS); }
 	}
 
 	function setStatus(text, type) {
@@ -224,7 +279,7 @@
 		if (result) {
 			fightActivity();
 			log(result + "  ←  " + text, true);
-			announceRandom();
+			flashSpecial();
 			render();
 		} else if (showChatEl.checked) {
 			log(text);
@@ -368,7 +423,7 @@
 		if (!settings.names || typeof settings.names != "object") { settings.names = {}; }
 		if (!settings.bossNames || typeof settings.bossNames != "object") { settings.bossNames = {}; }
 		if (settings.headers != "tint") { settings.headers = "show"; }
-		settings.warning = settings.warning !== false;
+		settings.flash = settings.flash !== false;
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -387,7 +442,7 @@
 			if (boss) { button.textContent = bossName(boss, true); }
 		});
 		el("opt-compact").checked = settings.compact;
-		el("opt-warning").checked = settings.warning;
+		el("opt-flash").checked = settings.flash;
 		[["opt-view", "view"], ["opt-layout", "layout"], ["opt-headers", "headers"]].forEach(function (pair) {
 			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
 				button.classList.toggle("selected", button.dataset.value == settings[pair[1]]);
@@ -400,7 +455,11 @@
 	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
 	segmented(el("opt-headers"), "headers", [["show", "Show"], ["tint", "Hide, colour the text"]]);
 	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
-	el("opt-warning").onchange = function () { settings.warning = el("opt-warning").checked; applySettings(); };
+	el("opt-flash").onchange = function () {
+		settings.flash = el("opt-flash").checked;
+		if (!settings.flash) { stopFlash(); }
+		applySettings();
+	};
 
 	// Rename panel: a box per boss and per special. Empty means the original name.
 	function renameRow(list, original, current, onChange) {
@@ -518,8 +577,8 @@
 		input.value = "";
 	};
 
-	// Move past steps that have no chat line once their time has passed, and flash the
-	// warning before each special.
+	// Move past steps that have no chat line once their time has passed, and keep the
+	// flash going.
 	setInterval(function () {
 		var result = tracker.tick();
 		if (result) {

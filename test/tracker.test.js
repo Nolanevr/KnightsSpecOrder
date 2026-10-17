@@ -113,7 +113,7 @@ test("Blood Diamond only counts in phases 3 and 5", () => {
 });
 
 test("phase 5's third step is Dash and any of Lord's three random specials", () => {
-	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["Your mind betrays you", "Mind Flay"]]) {
+	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["BEAR THE CRIMSON MARK!", "Meatball"]]) {
 		let time = 0;
 		const t = new SpecTracker(shippedConfig, () => time);
 		t.setPhase(4);
@@ -132,11 +132,11 @@ test("Lord's random special on its own moves phase 5 along", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.setPhase(4);
 	t.setNextSpecial(1);
-	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: Your mind betrays you"), /Mind Flay/);
+	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), /Meatball/);
 	assert.strictEqual(t.nextSpecial, 0);
 	assert.strictEqual(t.lastMatch.random, true);
-	// Meatball isn't in phase 5 any more.
-	assert.strictEqual(t.handleLine("[22:00:15] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), null);
+	// Mind Flay isn't in phase 5.
+	assert.strictEqual(t.handleLine("[22:00:15] . ord Vasily '  hrazi: Your mind betrays you"), null);
 });
 
 test("one boss's line on its own is enough, whichever boss it is", () => {
@@ -172,7 +172,7 @@ test("the silent Blue Bar step is assumed used when its time passes (Lord's tank
 	t.setNextSpecial(5);
 	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 6
 	assert.strictEqual(t.nextSpecial, 0); // step 1: Magic Bleed + Blue Bar, no line for Lord's tank
-	time += 13000; // Blue Bar is 20 ticks (12s) after the previous special
+	time += 15500; // in phase 4 Blue Bar is 24 ticks (14.4s) after the previous special, plus grace
 	assert.strictEqual(t.tick(), null);
 	time += 1000;
 	assert.match(t.tick(), /Step 1/);
@@ -180,6 +180,20 @@ test("the silent Blue Bar step is assumed used when its time passes (Lord's tank
 	time += 15000;
 	t.handleLine("[22:00:30] . ord Vasily '  hrazi: FALL IN LINE!"); // step 2
 	assert.strictEqual(t.nextSpecial, 2);
+});
+
+test("in phase 5 the silent Blue Bar step is assumed used 20 ticks after the previous special", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	t.setNextSpecial(2);
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
+	assert.strictEqual(t.nextSpecial, 0); // Magic Bleed + Blue Bar
+	time += 13500; // 20 ticks (12s), plus grace
+	assert.strictEqual(t.tick(), null);
+	time += 500;
+	assert.match(t.tick(), /Step 1/);
+	assert.strictEqual(t.nextSpecial, 1);
 });
 
 test("Lady's line for the Blue Bar step still counts once for her tank", () => {
@@ -240,10 +254,10 @@ test("Lady's line at the start of phase 4 beats the timer", () => {
 	assert.strictEqual(t.nextSpecial, 1);
 });
 
-test("the warning comes 10 seconds after the previous special", () => {
+test("the next special shows 10 seconds after the previous one", () => {
 	let time = 0;
 	const t = new SpecTracker(shippedConfig, () => time);
-	assert.strictEqual(t.warningTime(), null, "nothing used yet");
+	assert.strictEqual(t.warningTime(), null, "nothing to go on yet");
 	time = 5000;
 	t.handleLine("[21:08:31] Lady Karmina Ghrazi: SUFFER UNTO ME!");
 	assert.strictEqual(t.warningTime(), 5000 + shippedConfig.warnAfterMs);
@@ -255,6 +269,28 @@ test("the warning comes 10 seconds after the previous special", () => {
 	assert.strictEqual(t.warningTime(), 17000 + shippedConfig.warnAfterMs, "the next special moves it on");
 	t.setNextSpecial(0);
 	assert.strictEqual(t.warningTime(), null, "picked by hand: no timing to go on");
+});
+
+test("in phase 5 the next special shows 6 seconds after the previous one", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	time = 2000;
+	t.handleLine("[22:00:00] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.strictEqual(t.warningTime(), 2000 + 6000);
+});
+
+test("the first special shows 10 seconds after the kill starts", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	time = 3000;
+	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
+	assert.strictEqual(t.warningTime(), 3000 + shippedConfig.firstWarnAfterMs);
+	time = 13000;
+	t.handleLine("[21:39:34] Lady Karmina Ghrazi: SUFFER UNTO ME!");
+	assert.strictEqual(t.warningTime(), 13000 + shippedConfig.warnAfterMs, "then from each special");
+	t.reset();
+	assert.strictEqual(t.warningTime(), null, "Reset button: kill start not known");
 });
 
 test("the warning before phase 4's silent first step comes 2 seconds before it", () => {
@@ -389,7 +425,7 @@ test("phase 5 carries on from where phase 4 was", () => {
 	useStep(t, "Magic Bleed", "Blue Bar");
 	useStep(t, "5 Prayers", "5 Prayers");
 	assert.strictEqual(t.nextSpecial, 2);
-	useStep(t, "Dash", "Mind Flay");
+	useStep(t, "Dash", "Meatball");
 	assert.strictEqual(t.nextSpecial, 0);
 });
 
