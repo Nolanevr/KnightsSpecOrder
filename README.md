@@ -12,7 +12,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
 - In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and shows only his pick on screen (e.g. **MEATBALL**).
 - Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
-- When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
+- When Lady Karmina Ghrazi says "Just give in. Join us." or Lord Vasily Ghrazi says "Are you so hungry for death?", a new kill has started, and the panel goes back to phase 1, step 1. If both are said, only the first counts.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 
 | Phase | Order (Lady + Lord) |
@@ -89,7 +89,7 @@ Turn on **Markers** to check what it sees: a large square with a white border ov
 
 The specials are written on screen in bold, one line per boss in the boss's colour: Lady's in red, Lord's in blue underneath.
 
-- **Before a special**: the next step's specials appear (steady) 18 game ticks (10.8 seconds) after the previous special (`warnAfterMs` in [`config.js`](config.js)). In phase 5 there are only 3 auto-attacks between specials, so it's 14 ticks (8.4 seconds, the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after Lady's "Just give in. Join us." (`firstWarnAfterMs`), and phase 4's first one 1.2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
+- **Before a special**: the next step's specials appear (steady) 18 game ticks (10.8 seconds) after the previous special (`warnAfterMs` in [`config.js`](config.js)). In phase 5 there are only 3 auto-attacks between specials, so it's 14 ticks (8.4 seconds, the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after the new-kill line, Lady's "Just give in. Join us." or Lord's "Are you so hungry for death?" (`firstWarnAfterMs`), and phase 4's first one 1.2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
 - **When its chat line comes in**: the step's specials show for 3 seconds more (`flashMs`). The writing is steady; it doesn't flash.
 
 It works in every phase and follows **Show** in the options:

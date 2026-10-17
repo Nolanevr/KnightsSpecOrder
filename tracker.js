@@ -214,6 +214,9 @@
 
 		if (matchesAny(line, cfg.resetLines)) {
 			if (!this.isNew(time, "reset")) { return null; }
+			// The other boss's new-kill line for the same kill (no special since the first).
+			var start = this.fightStartTime;
+			if (start != null && !this.lastUsed && this.now() - start < (cfg.resetWindowMs || 0)) { return null; }
 			this.reset();
 			this.fightStartTime = this.now();
 			return "Fight started";
