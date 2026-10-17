@@ -129,17 +129,13 @@ var BOSS_CONFIG = {
 	silentStepDelayMs: 20 * 600,
 	silentStepGraceMs: 3 * 600,
 
-	// The next special flashes in large red text in the middle of the screen this long
-	// after the previous special (specials are 20 ticks apart, so ~2 seconds' warning),
-	// for warningMs or until it's used.
-	warnAfterMs: 10 * 1000,
-	warningMs: 3000,
-	// Where the warning is drawn: centred, this fraction of the game window's height
-	// above its middle, where your character is (about 10 tiles above them).
-	warningHeight: 0.25,
-	warningTextSize: 40,
-	// How long a boss's random special (Lord's in phase 5) flashes when it's said.
-	randomFlashMs: 3000,
+	// When a special's chat line comes in, its step's specials flash on screen for
+	// flashMs, one line per boss in the boss's colour, centred and this fraction of the
+	// game window's height above its middle, where your character is (about 10 tiles
+	// above them).
+	flashMs: 3000,
+	flashHeight: 0.25,
+	flashTextSize: 40,
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.

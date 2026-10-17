@@ -142,19 +142,6 @@
 		return "Step " + (index + 1) + " (" + stepLabel(this.rotation()[index]) + ") has no chat line, assumed used";
 	};
 
-	// When to warn that the next special is coming: warnAfterMs after the previous
-	// special, or, in a phase that opens with a silent step, the same time before that
-	// step is due. Null when there's nothing to warn about.
-	SpecTracker.prototype.warningTime = function () {
-		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
-		if (!cfg.warnAfterMs) { return null; }
-		if (last) { return last.time + cfg.warnAfterMs; }
-		if (this.phaseStartTime != null && startDelay && cfg.silentStepDelayMs) {
-			return this.phaseStartTime + startDelay - (cfg.silentStepDelayMs - cfg.warnAfterMs);
-		}
-		return null;
-	};
-
 	SpecTracker.prototype.cooledDown = function (key) {
 		var t = this.now();
 		var cooldown = this.config.triggerCooldownMs || 0;

@@ -240,36 +240,6 @@ test("Lady's line at the start of phase 4 beats the timer", () => {
 	assert.strictEqual(t.nextSpecial, 1);
 });
 
-test("the warning comes 10 seconds after the previous special", () => {
-	let time = 0;
-	const t = new SpecTracker(shippedConfig, () => time);
-	assert.strictEqual(t.warningTime(), null, "nothing used yet");
-	time = 5000;
-	t.handleLine("[21:08:31] Lady Karmina Ghrazi: SUFFER UNTO ME!");
-	assert.strictEqual(t.warningTime(), 5000 + shippedConfig.warnAfterMs);
-	time = 6000;
-	t.handleLine("[21:08:32] Lord Vasily Ghrazi: FALL IN LINE!"); // the other half of the same step
-	assert.strictEqual(t.warningTime(), 5000 + shippedConfig.warnAfterMs, "same step: unchanged");
-	time = 17000;
-	t.handleLine("[21:08:43] Lady Karmina Ghrazi: Nowhere is beyond");
-	assert.strictEqual(t.warningTime(), 17000 + shippedConfig.warnAfterMs, "the next special moves it on");
-	t.setNextSpecial(0);
-	assert.strictEqual(t.warningTime(), null, "picked by hand: no timing to go on");
-});
-
-test("the warning before phase 4's silent first step comes 2 seconds before it", () => {
-	let time = 0;
-	const t = new SpecTracker(shippedConfig, () => time);
-	time = 1000;
-	t.setPhase(3);
-	const due = 1000 + shippedConfig.phases[3].silentStartDelayMs;
-	assert.strictEqual(t.warningTime(), due - (shippedConfig.silentStepDelayMs - shippedConfig.warnAfterMs));
-	// Once the silent step is assumed used, the next warning is 10 seconds after it.
-	time = due + shippedConfig.silentStepGraceMs;
-	assert.ok(t.tick());
-	assert.strictEqual(t.warningTime(), due + shippedConfig.warnAfterMs);
-});
-
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
