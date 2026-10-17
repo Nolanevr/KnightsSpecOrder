@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Rapid Attack</title>
+<style>
+	:root {
+		--bg: rgba(16, 20, 24, 0.88);
+		--line: #3a4450;
+		--text: #e8e2d0;
+		--dim: #8f99a3;
+		--red: #ff4a4a;
+		--green: #4ade5c;
+		--blue: #4a9bff;
+		--next: #ffd84a;
+	}
+	* { box-sizing: border-box; }
+	html, body { margin: 0; height: 100%; overflow: hidden; }
+	body {
+		background: var(--bg);
+		color: var(--text);
+		font: 12px/1.3 "Segoe UI", Arial, sans-serif;
+		border: 1px solid var(--line);
+		display: flex;
+		flex-direction: column;
+		user-select: none;
+	}
+	header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 6px;
+		border-bottom: 1px solid var(--line);
+		cursor: move;
+	}
+	header h1 { font-size: 12px; margin: 0; white-space: nowrap; }
+	header .grow { flex: 1; }
+	button {
+		background: #262e36;
+		color: var(--text);
+		border: 1px solid var(--line);
+		border-radius: 3px;
+		font: inherit;
+		font-size: 11px;
+		padding: 1px 6px;
+		cursor: pointer;
+	}
+	button.on { border-color: var(--next); color: var(--next); }
+	#status { color: var(--dim); font-size: 11px; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	main { flex: 1; overflow: auto; padding: 4px 6px 6px; }
+	#sequence { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+	#sequence .arrow { color: var(--dim); }
+	.chip {
+		border: 2px solid transparent;
+		border-radius: 4px;
+		padding: 2px 7px;
+		font-size: 17px;
+		font-weight: 600;
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.chip.next { border-color: var(--next); background: rgba(255, 216, 74, 0.12); }
+	.chip.done { opacity: 0.35; text-decoration: line-through; }
+	.red { color: var(--red); }
+	.green { color: var(--green); }
+	.blue { color: var(--blue); }
+	#idle { color: var(--dim); }
+	#learn table { width: 100%; border-collapse: collapse; font-size: 11px; }
+	#learn td, #learn th { padding: 1px 3px; text-align: right; white-space: nowrap; }
+	#learn th { color: var(--dim); font-weight: normal; }
+	#learn td:first-child, #learn th:first-child { text-align: left; }
+	#learn p { margin: 2px 0 4px; color: var(--dim); }
+	.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
+	.dot.red { background: var(--red); } .dot.green { background: var(--green); } .dot.blue { background: var(--blue); }
+	#grip { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; cursor: nwse-resize;
+		background: linear-gradient(135deg, transparent 50%, var(--line) 50%); }
+	[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header id="drag">
+	<h1>Rapid Attack</h1>
+	<span class="grow"></span>
+	<button id="test" title="Show a made-up order, to check the panel">Test</button>
+	<button id="markers" title="Draw a marker over each droplet seen (large with a white border: coming at you)">Markers</button>
+	<button id="learn-toggle" title="Find which models are the droplets">Learn</button>
+</header>
+<div id="status"></div>
+<main>
+	<div id="watch">
+		<div id="sequence"></div>
+		<div id="idle">The order of prayers shows here when droplets come at you.</div>
+	</div>
+	<div id="learn" hidden>
+		<p>Start learning just before a Rapid Attack ("FALL IN LINE!" / "SUFFER UNTO ME!") and tick the droplet models (likeliest first). Then press Learn again.</p>
+		<table>
+			<thead><tr><th>Model</th><th title="Times it appeared">Seen</th><th title="Appearances shorter than a few seconds">Brief</th><th title="Times it disappeared next to you">Near you</th><th title="Average time on screen">Life</th><th title="Average distance moved">Moved</th></tr></thead>
+			<tbody id="candidates"></tbody>
+		</table>
+	</div>
+</main>
+<div id="grip"></div>
+<script>
+	const $ = (id) => document.getElementById(id);
+	let state = { picked: [], prayers: {} };
+
+	const send = (text) => fetch("https://bolt-api/send-message", { method: "POST", body: text });
+	const reposition = (h, v) => fetch(`https://bolt-api/start-reposition?h=${h}&v=${v}`);
+
+	$("drag").addEventListener("mousedown", (e) => {
+		if (e.button === 0 && e.target.tagName !== "BUTTON") reposition(0, 0);
+	});
+	$("grip").addEventListener("mousedown", (e) => { if (e.button === 0) reposition(1, 1); });
+	$("test").onclick = () => send("test");
+	$("markers").onclick = () => send(state.markers ? "markers off" : "markers on");
+	$("learn-toggle").onclick = () => send(state.learning ? "learn off" : "learn on");
+
+	function renderSequence(seq) {
+		const box = $("sequence");
+		box.replaceChildren();
+		$("idle").hidden = !!seq;
+		if (!seq) return;
+		seq.colours.forEach((colour, i) => {
+			if (i > 0) {
+				const arrow = document.createElement("span");
+				arrow.className = "arrow";
+				arrow.textContent = "→";
+				box.appendChild(arrow);
+			}
+			const chip = document.createElement("span");
+			chip.className = "chip " + colour + (seq.done[i] ? " done" : "") + (seq.next === i + 1 ? " next" : "");
+			chip.textContent = state.prayers[colour] || colour;
+			box.appendChild(chip);
+		});
+	}
+
+	function renderCandidates(candidates) {
+		const body = $("candidates");
+		body.replaceChildren();
+		candidates.forEach((c) => {
+			const row = document.createElement("tr");
+			const first = document.createElement("td");
+			const box = document.createElement("input");
+			box.type = "checkbox";
+			box.checked = state.picked.includes(c.vc);
+			box.onchange = () => send((box.checked ? "pick " : "unpick ") + c.vc);
+			const dot = document.createElement("span");
+			dot.className = "dot " + c.colour;
+			first.append(box, dot, c.vc + " verts");
+			row.appendChild(first);
+			[c.appearances, c.brief, c.nearYou, (c.avgLifeMs / 1000).toFixed(1) + "s", c.avgMovedTiles.toFixed(1) + "t"].forEach((v) => {
+				const td = document.createElement("td");
+				td.textContent = v;
+				row.appendChild(td);
+			});
+			body.appendChild(row);
+		});
+	}
+
+	window.addEventListener("message", (event) => {
+		if (typeof event.data !== "object" || event.data.type !== "pluginMessage") return;
+		const msg = JSON.parse(new TextDecoder().decode(event.data.content));
+		if (msg.type === "state") {
+			state = msg;
+			$("status").textContent = msg.status;
+			$("markers").classList.toggle("on", msg.markers);
+			$("learn-toggle").classList.toggle("on", msg.learning);
+			$("learn").hidden = !msg.learning;
+			$("watch").hidden = msg.learning;
+			renderSequence(msg.seq || null);
+		} else if (msg.type === "learn") {
+			renderCandidates(msg.candidates);
+		}
+	});
+
+	send("ready");
+</script>
+</body>
+</html>
