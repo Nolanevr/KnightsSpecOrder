@@ -28,8 +28,8 @@ local function hdist(ax, az, bx, bz)
 end
 
 -- Whether a droplet is coming at the player at `me`: it's above or next to them
--- (Vasily's droplets rain straight down on his target), or it's moving sideways on
--- a path that passes next to them (Karmina's are fired at hers).
+-- (falling on them), or it's moving sideways on a path that passes next to them
+-- (flying at them). Which one depends on how close or far the player is.
 function M.aimedAt(t, me, cfg)
 	if hdist(t.x, t.z, me.x, me.z) <= cfg.ownRadius then return true end
 	local hv2 = t.vx * t.vx + t.vz * t.vz
@@ -51,13 +51,17 @@ function M.eta(t, me, now, cfg)
 end
 
 -- Pairs each detection with the nearest live track of the same colour (closest
--- pairs first). Returns a table: detection index -> track.
-local function match(tracks, detections, maxDist)
+-- pairs first), measured from where the track's speed says it should be now.
+-- Returns a table: detection index -> track.
+local function match(tracks, detections, maxDist, now)
 	local pairs_ = {}
 	for i, d in ipairs(detections) do
 		for _, t in ipairs(tracks) do
 			if t.colour == d.colour then
-				local dx, dy, dz = d.x - t.x, d.y - t.y, d.z - t.z
+				local dt = now - t.lastSeen
+				local dx = d.x - (t.x + (t.vx or 0) * dt)
+				local dy = d.y - (t.y + (t.vy or 0) * dt)
+				local dz = d.z - (t.z + (t.vz or 0) * dt)
 				local dist = sqrt(dx * dx + dy * dy + dz * dz)
 				if dist <= maxDist then pairs_[#pairs_ + 1] = { i = i, t = t, dist = dist } end
 			end
@@ -109,7 +113,7 @@ end
 -- known yet) and the time.
 function Tracker:update(detections, me, now)
 	local cfg = self.cfg
-	local byDetection = match(self.tracks, detections, cfg.matchDist)
+	local byDetection = match(self.tracks, detections, cfg.matchDist, now)
 	local seen = {}
 	for i, d in ipairs(detections) do
 		local t = byDetection[i]
@@ -240,7 +244,7 @@ function Learner:update(detections, me, now)
 		if k then k.tracks[#k.tracks + 1] = t end
 	end
 	for _, k in pairs(byKind) do
-		local byDetection = match(k.tracks, k.detections, cfg.matchDist)
+		local byDetection = match(k.tracks, k.detections, cfg.matchDist, now)
 		for i, d in ipairs(k.detections) do
 			local t = byDetection[i]
 			if t then

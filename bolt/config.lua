@@ -43,9 +43,10 @@ return {
 	-- A droplet that disappears within landRadius of you has hit you.
 	landRadius = 2.5 * TILE,
 
-	-- Matching a droplet from one frame to the next: the furthest it can move
-	-- between two frames, and how long it can go unseen before it's gone.
-	matchDist = 3 * TILE,
+	-- Matching a droplet from one frame to the next: the furthest it can be from
+	-- where its speed says it should be (or from where it was, on its second
+	-- sighting), and how long it can go unseen before it's gone.
+	matchDist = 1.5 * TILE,
 	lostMs = 250,
 	-- Frames in a row a droplet must look like it isn't coming at you before it's
 	-- taken back off the list.

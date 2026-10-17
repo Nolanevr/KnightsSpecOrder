@@ -49,13 +49,13 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
 
 ## Bolt plugin: Rapid Attack prayers
 
-[`bolt/`](bolt) is a separate plugin for the [Bolt launcher](https://bolt.adamcake.com) that shows which protection prayers to use for the Rapid Attack ("3 Prayers" / "5 Prayers" above: "FALL IN LINE!" / "SUFFER UNTO ME!"). Each knight throws 3 droplets (5 from phase 4) at the player holding the *other* knight's aggression, one every 2 ticks: **red is Melee, green is Ranged, blue is Magic**. Vasily's droplets rain down on his target and Karmina's are fired at hers, so both players get droplets, in different orders.
+[`bolt/`](bolt) is a separate plugin for the [Bolt launcher](https://bolt.adamcake.com) that shows which protection prayers to use for the Rapid Attack ("3 Prayers" / "5 Prayers" above: "FALL IN LINE!" / "SUFFER UNTO ME!"). Each knight throws 3 droplets (5 from phase 4) at the player holding the *other* knight's aggression, one every 2 ticks: **red is Melee, green is Ranged, blue is Magic**. Depending on how close or far the player is, the droplets either fall down on them or fly at them, so both players get droplets, in different orders.
 
 The plugin watches the droplet models as the game draws them and only counts the ones coming at **you**:
 
 - a droplet above or next to you (within 1.5 tiles sideways) is falling on you;
-- a droplet moving sideways on a path that passes next to you is being fired at you;
-- the rest (falling on or fired at your partner) are ignored.
+- a droplet moving sideways on a path that passes next to you is flying at you;
+- the rest (falling on or flying at your partner) are ignored.
 
 Your droplets are listed in the order they'll hit (worked out from each one's distance and speed), e.g. **Ranged → Melee → Magic**, with the next one outlined in yellow and the ones that have hit you crossed out. If you hold both knights' aggression, both sets are merged into one list. The order stays on screen for a few seconds after the last hit, and the next attack starts a new list.
 
@@ -79,6 +79,7 @@ Turn on **Markers** to check what it sees: a large square with a white border ov
 
 - Bolt only sees what's drawn, so the droplets have to be on screen.
 - If you and your partner stand on top of each other, droplets falling on them look like they're falling on you.
+- A droplet flying at your partner that passes right over you can show up briefly, until it's clear it's going past you.
 - The distances and speeds in `bolt/config.lua` are estimates and haven't been tuned in game yet; if droplets are missed or counted for the wrong player, adjust `ownRadius`, `minSideSpeed` and the colour settings there.
 
 ## Phase marker

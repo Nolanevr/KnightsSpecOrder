@@ -29,7 +29,7 @@ local function list(t) return table.concat(t, ",") end
 local ME = { x = 3000 * TILE + 256, y = 0, z = 2000 * TILE + 256 }
 local PARTNER = { x = ME.x + 6 * TILE, y = 0, z = ME.z }
 
--- A droplet that falls from `height` tiles onto `target` (Vasily), appearing at
+-- A droplet that falls from `height` tiles onto `target`, appearing at
 -- `at` ms and landing at `speed` tiles per second.
 local function rain(target, colour, at, height, speed)
 	local fall = height * TILE
@@ -38,7 +38,7 @@ local function rain(target, colour, at, height, speed)
 		x = target.x + 40, y = target.y + fall, z = target.z - 30, vx = 0, vy = -v, vz = 0 }
 end
 
--- A droplet fired from `source` at `target` (Karmina), appearing at `at` ms.
+-- A droplet that flies from `source` at `target`, appearing at `at` ms.
 local function projectile(source, target, colour, at, speed)
 	local dx, dz = target.x - source.x, target.z - source.z
 	local d = math.sqrt(dx * dx + dz * dz)
@@ -83,7 +83,7 @@ test("classify picks the dominant channel", function ()
 	eq(droplets.classify(0.05, 0.01, 0.01, config), nil, "too dark")
 end)
 
-test("Vasily's rain: only the droplets falling on you count", function ()
+test("falling droplets: only the ones falling on you count", function ()
 	local objects = {
 		rain(ME, "green", 0, 6, 6), rain(ME, "red", 1200, 6, 6), rain(ME, "blue", 2400, 6, 6),
 		rain(PARTNER, "blue", 0, 6, 6), rain(PARTNER, "blue", 1200, 6, 6), rain(PARTNER, "red", 2400, 6, 6),
@@ -97,7 +97,7 @@ test("Vasily's rain: only the droplets falling on you count", function ()
 		"sequence over time")
 end)
 
-test("Karmina's projectiles: fired at you count, fired at your partner don't", function ()
+test("flying droplets: the ones flying at you count, the ones flying at your partner don't", function ()
 	local karmina = { x = ME.x + 3 * TILE, y = 0, z = ME.z + 8 * TILE }
 	local objects = {
 		projectile(karmina, ME, "red", 0, 10), projectile(karmina, ME, "red", 1200, 10), projectile(karmina, ME, "green", 2400, 10),
@@ -109,6 +109,38 @@ test("Karmina's projectiles: fired at you count, fired at your partner don't", f
 	eq(tracker.attack.finishedAt ~= nil, true, "attack finished")
 end)
 
+test("you're close and get falling droplets, your partner is far and gets flying ones", function ()
+	local knight = { x = ME.x - 2 * TILE, y = 0, z = ME.z + 3 * TILE }
+	local objects = {
+		rain(ME, "blue", 0, 6, 6), rain(ME, "green", 1200, 6, 6), rain(ME, "blue", 2400, 6, 6),
+		projectile(knight, PARTNER, "red", 0, 10), projectile(knight, PARTNER, "red", 1200, 10), projectile(knight, PARTNER, "green", 2400, 10),
+	}
+	local final
+	play(objects, 4000, function (tracker) final = seqText(tracker) end)
+	eq(final, "blue*,green*,blue*", "sequence")
+end)
+
+test("you're far and get flying droplets, your partner is close and gets falling ones", function ()
+	local knight = { x = PARTNER.x + 2 * TILE, y = 0, z = PARTNER.z }
+	local objects = {
+		projectile(knight, ME, "green", 0, 10), projectile(knight, ME, "red", 1200, 10), projectile(knight, ME, "red", 2400, 10),
+		rain(PARTNER, "blue", 0, 6, 6), rain(PARTNER, "green", 1200, 6, 6), rain(PARTNER, "blue", 2400, 6, 6),
+	}
+	local final
+	play(objects, 4000, function (tracker) final = seqText(tracker) end)
+	eq(final, "green*,red*,red*", "sequence")
+end)
+
+test("a new droplet next to one that just landed is a new droplet", function ()
+	-- A green droplet lands on you, and another green one is fired from 2 tiles away
+	-- (at your partner) just as it disappears.
+	local knight = { x = ME.x - 2 * TILE, y = 0, z = ME.z + 1 * TILE }
+	local objects = { rain(ME, "green", 0, 6, 6), projectile(knight, PARTNER, "green", 1100, 10) }
+	local final
+	play(objects, 2500, function (tracker) final = seqText(tracker) end)
+	eq(final, "green*", "sequence")
+end)
+
 test("droplets that appear together are ordered nearest first", function ()
 	-- Three droplets appear at once at different heights and fall together.
 	local objects = { rain(ME, "blue", 0, 8, 6), rain(ME, "red", 0, 4, 6), rain(ME, "green", 0, 6, 6) }
@@ -117,9 +149,9 @@ test("droplets that appear together are ordered nearest first", function ()
 	eq(early, "red,green,blue", "order straight away")
 end)
 
-test("both knights at you: rain and projectiles are merged in hit order", function ()
+test("both knights at you: falling and flying droplets are merged in hit order", function ()
 	local karmina = { x = ME.x - 8 * TILE, y = 0, z = ME.z }
-	-- Rain lands ~1s after appearing; the projectiles take 0.8s.
+	-- Falling droplets land ~1s after appearing; flying ones take 0.8s.
 	local objects = {
 		rain(ME, "red", 0, 6, 6), rain(ME, "blue", 1200, 6, 6), rain(ME, "green", 2400, 6, 6),
 		projectile(karmina, ME, "green", 600, 10), projectile(karmina, ME, "green", 1800, 10), projectile(karmina, ME, "blue", 3000, 10),
