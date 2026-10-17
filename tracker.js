@@ -3,7 +3,8 @@
  * be tested in node.
  *
  * Each phase has one rotation of specials. Every step of the rotation is a pair:
- * one special per boss, used at the same time.
+ * one special per boss, used at the same time. A boss's half of a step can also be a
+ * list of specials, for a step where the boss picks one of them at random.
  */
 (function (root) {
 	// Normalise a chat line for fuzzy matching: drop the timestamp, lower-case it,
@@ -33,6 +34,15 @@
 		return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : null;
 	}
 
+	// The specials a boss's half of a step can be: one, or a random pick from a list.
+	function options(entry) {
+		return Array.isArray(entry) ? entry : [entry];
+	}
+
+	function stepLabel(step) {
+		return step.map(function (entry) { return options(entry).join(" / "); }).join(" + ");
+	}
+
 	function SpecTracker(config, now) {
 		this.config = config;
 		this.now = now || function () { return Date.now(); };
@@ -50,6 +60,9 @@
 		this.nextSpecial = 0;
 		this.lastUsed = null;
 		this.phaseStartTime = null;
+		// The last special recognised: { bossIndex, special, step, random }, where random
+		// means it was one boss's random pick for that step.
+		this.lastMatch = null;
 	};
 
 	SpecTracker.prototype.phaseCount = function () {
@@ -104,8 +117,9 @@
 	SpecTracker.prototype.isSilentStep = function (index) {
 		var cfg = this.config, step = this.rotation()[index];
 		for (var b = 0; b < step.length; b++) {
-			var lines = (cfg.specialLines[cfg.bosses[b].id] || {})[step[b]];
-			if (!lines || !lines.length) { return true; }
+			var lines = cfg.specialLines[cfg.bosses[b].id] || {};
+			var silent = options(step[b]).every(function (special) { return !(lines[special] || []).length; });
+			if (silent) { return true; }
 		}
 		return false;
 	};
@@ -125,7 +139,20 @@
 		this.nextSpecial = (index + 1) % this.rotation().length;
 		this.lastUsed = { index: index, time: due };
 		this.phaseStartTime = null;
-		return "Step " + (index + 1) + " (" + this.rotation()[index].join(" + ") + ") has no chat line, assumed used";
+		return "Step " + (index + 1) + " (" + stepLabel(this.rotation()[index]) + ") has no chat line, assumed used";
+	};
+
+	// When to warn that the next special is coming: warnAfterMs after the previous
+	// special, or, in a phase that opens with a silent step, the same time before that
+	// step is due. Null when there's nothing to warn about.
+	SpecTracker.prototype.warningTime = function () {
+		var cfg = this.config, last = this.lastUsed, startDelay = this.currentPhase().silentStartDelayMs;
+		if (!cfg.warnAfterMs) { return null; }
+		if (last) { return last.time + cfg.warnAfterMs; }
+		if (this.phaseStartTime != null && startDelay && cfg.silentStepDelayMs) {
+			return this.phaseStartTime + startDelay - (cfg.silentStepDelayMs - cfg.warnAfterMs);
+		}
+		return null;
 	};
 
 	SpecTracker.prototype.cooledDown = function (key) {
@@ -202,7 +229,7 @@
 		var rotation = this.rotation();
 		var inStep = function (s) {
 			for (var m = 0; m < matches.length; m++) {
-				if (rotation[s][matches[m].bossIndex] == matches[m].special) { return matches[m]; }
+				if (options(rotation[s][matches[m].bossIndex]).indexOf(matches[m].special) != -1) { return matches[m]; }
 			}
 			return null;
 		};
@@ -227,12 +254,18 @@
 
 		var label = match.boss.name + ": " + match.special;
 		if (time != null && !this.isNew(time, "special:" + match.boss.id + ":" + match.special)) { return null; }
+		this.lastMatch = {
+			bossIndex: match.bossIndex, special: match.special, step: step,
+			random: Array.isArray(rotation[step][match.bossIndex]),
+		};
 		if (paired) { return label + " (same step)"; }
 		this.specialUsed(step);
 		return label;
 	};
 
 	SpecTracker.normalize = normalize;
+	SpecTracker.options = options;
+	SpecTracker.stepLabel = stepLabel;
 
 	if (typeof module !== "undefined") { module.exports = SpecTracker; }
 	else { root.SpecTracker = SpecTracker; }
