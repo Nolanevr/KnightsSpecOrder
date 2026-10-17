@@ -1,0 +1,6 @@
+{
+  "name": "Rapid Attack",
+  "version": "1.0",
+  "description": "Ghrazi Blood Knights: shows the order of protection prayers for the Rapid Attack droplets coming at you (red Melee, green Ranged, blue Magic).",
+  "main": "main.lua"
+}
