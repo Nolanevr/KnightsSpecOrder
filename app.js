@@ -33,7 +33,8 @@
 	//  bossNames: the player's own names for the bosses, as { bossId: name }
 	//  headers: "show" the boss names over the columns, or "tint" to hide them and colour
 	//           each special's text in its boss's colour instead
-	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show" };
+	//  warning: flash the next special on screen shortly before it happens
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", warning: true };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
@@ -45,14 +46,18 @@
 		return settings.bossNames[boss.id] || (short ? boss.name.split(" ")[0] : boss.name);
 	}
 
+	// Which bosses' specials to show: all, or just the one picked in the options.
+	function shownBosses(phase) {
+		return cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
+			return settings.view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == settings.view;
+		});
+	}
+
 	function render() {
 		var phase = tracker.currentPhase();
 		el("phase-prev").disabled = tracker.phase == 0;
 		el("phase-next").disabled = tracker.phase == tracker.phaseCount() - 1;
-		// Which bosses' columns to show: all, or just the one picked in the options.
-		var shown = cfg.bosses.map(function (boss, b) { return b; }).filter(function (b) {
-			return settings.view == "both" || phase.alwaysShowBoth || cfg.bosses[b].id == settings.view;
-		});
+		var shown = shownBosses(phase);
 		el("phase-name").textContent = phase.name;
 		var steps = tracker.rotation();
 		var layout = steps.length > ROWS ? settings.layout : "standard";
@@ -117,6 +122,60 @@
 			items.push(box);
 		});
 		specialsEl.replaceChildren.apply(specialsEl, items);
+	}
+
+	// The warning before each special: the next step's specials, flashing in large red
+	// text above the character (the middle of the game window) from warnAfterMs after
+	// the previous special until it's used, for at most warningMs.
+	var WARNING_GROUP = "kso-warning";
+	var WARNING_FLASH_MS = 300;
+	var warning = { key: null, start: 0, flash: -1 };
+
+	function warningText() {
+		var step = tracker.rotation()[tracker.nextSpecial];
+		var shown = shownBosses(tracker.currentPhase());
+		var names = shown.map(function (b) { return displayName(cfg.bosses[b].id, step[b]); });
+		// With one boss shown, the other boss's specials that matter to this boss's tank.
+		if (shown.length == 1) {
+			cfg.bosses.forEach(function (other, o) {
+				if (o != shown[0] && (cfg.bosses[shown[0]].alsoShow || []).indexOf(step[o]) != -1) {
+					names.push(displayName(other.id, step[o]));
+				}
+			});
+		}
+		return names.join(" + ").toUpperCase();
+	}
+
+	function stopWarning() {
+		if (warning.flash >= 0) { alt1.overLayClearGroup(WARNING_GROUP); }
+		warning.flash = -1;
+	}
+
+	function updateWarning() {
+		if (!inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
+		var at = settings.warning ? tracker.warningTime() : null;
+		var now = Date.now();
+		// A new warning, once per special (the key changes when the next special does).
+		var key = at == null ? null : at + "|" + tracker.phase + "|" + tracker.nextSpecial;
+		if (key != warning.key) {
+			stopWarning();
+			warning.key = key;
+			warning.start = at;
+		}
+		if (key == null || now < warning.start || now >= warning.start + cfg.warningMs) {
+			stopWarning();
+			return;
+		}
+		// Flash: shown for one WARNING_FLASH_MS, hidden for the next.
+		var flash = Math.floor((now - warning.start) / WARNING_FLASH_MS);
+		if (flash == warning.flash) { return; }
+		warning.flash = flash;
+		if (flash % 2) { return; }
+		alt1.overLaySetGroup(WARNING_GROUP);
+		alt1.overLayTextEx(warningText(), A1lib.mixColor(255, 40, 40), cfg.warningTextSize,
+			Math.round(alt1.rsWidth / 2), Math.round(alt1.rsHeight * (0.5 - cfg.warningHeight)),
+			WARNING_FLASH_MS, "", true, true);
+		alt1.overLaySetGroup("");
 	}
 
 	function setStatus(text, type) {
@@ -281,6 +340,7 @@
 		if (!settings.names || typeof settings.names != "object") { settings.names = {}; }
 		if (!settings.bossNames || typeof settings.bossNames != "object") { settings.bossNames = {}; }
 		if (settings.headers != "tint") { settings.headers = "show"; }
+		settings.warning = settings.warning !== false;
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -299,6 +359,7 @@
 			if (boss) { button.textContent = bossName(boss, true); }
 		});
 		el("opt-compact").checked = settings.compact;
+		el("opt-warning").checked = settings.warning;
 		[["opt-view", "view"], ["opt-layout", "layout"], ["opt-headers", "headers"]].forEach(function (pair) {
 			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
 				button.classList.toggle("selected", button.dataset.value == settings[pair[1]]);
@@ -311,6 +372,7 @@
 	segmented(el("opt-layout"), "layout", [["standard", "Standard"], ["side", "Side by side"], ["ultra", "Ultra compact"]]);
 	segmented(el("opt-headers"), "headers", [["show", "Show"], ["tint", "Hide, colour the text"]]);
 	el("opt-compact").onchange = function () { settings.compact = el("opt-compact").checked; applySettings(); };
+	el("opt-warning").onchange = function () { settings.warning = el("opt-warning").checked; applySettings(); };
 
 	// Rename panel: a box per boss and per special. Empty means the original name.
 	function renameRow(list, original, current, onChange) {
@@ -428,14 +490,16 @@
 		input.value = "";
 	};
 
-	// Move past steps that have no chat line once their time has passed.
+	// Move past steps that have no chat line once their time has passed, and flash the
+	// warning before each special.
 	setInterval(function () {
 		var result = tracker.tick();
 		if (result) {
 			log(result, true);
 			render();
 		}
-	}, 500);
+		try { updateWarning(); } catch (e) { console.error(e); }
+	}, 100);
 
 	applySettings();
 	start();
