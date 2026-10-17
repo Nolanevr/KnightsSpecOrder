@@ -115,7 +115,7 @@ var BOSS_CONFIG = {
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
 				// Lord picks one of these at random; it flashes on screen when he says it.
-				["Dash", ["Blood Waves", "Blood Diamond", "Mind Flay"]],
+				["Dash", ["Blood Waves", "Blood Diamond", "Meatball"]],
 			],
 		},
 	],

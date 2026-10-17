@@ -113,7 +113,7 @@ test("Blood Diamond only counts in phases 3 and 5", () => {
 });
 
 test("phase 5's third step is Dash and any of Lord's three random specials", () => {
-	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["Your mind betrays you", "Mind Flay"]]) {
+	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["BEAR THE CRIMSON MARK!", "Meatball"]]) {
 		let time = 0;
 		const t = new SpecTracker(shippedConfig, () => time);
 		t.setPhase(4);
@@ -132,11 +132,11 @@ test("Lord's random special on its own moves phase 5 along", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.setPhase(4);
 	t.setNextSpecial(1);
-	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: Your mind betrays you"), /Mind Flay/);
+	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), /Meatball/);
 	assert.strictEqual(t.nextSpecial, 0);
 	assert.strictEqual(t.lastMatch.random, true);
-	// Meatball isn't in phase 5 any more.
-	assert.strictEqual(t.handleLine("[22:00:15] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), null);
+	// Mind Flay isn't in phase 5.
+	assert.strictEqual(t.handleLine("[22:00:15] . ord Vasily '  hrazi: Your mind betrays you"), null);
 });
 
 test("one boss's line on its own is enough, whichever boss it is", () => {
@@ -411,7 +411,7 @@ test("phase 5 carries on from where phase 4 was", () => {
 	useStep(t, "Magic Bleed", "Blue Bar");
 	useStep(t, "5 Prayers", "5 Prayers");
 	assert.strictEqual(t.nextSpecial, 2);
-	useStep(t, "Dash", "Mind Flay");
+	useStep(t, "Dash", "Meatball");
 	assert.strictEqual(t.nextSpecial, 0);
 });
 

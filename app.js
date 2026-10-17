@@ -49,9 +49,16 @@
 	function optionNames(bossId, entry) {
 		return SpecTracker.options(entry).map(function (s) { return displayName(bossId, s); }).join(" / ");
 	}
-	// The other boss's specials in a step that also matter to a boss's tank (alsoShow).
-	function alsoShown(boss, entry) {
-		return SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
+	// The other boss's specials in a step that also matter to a boss's tank (alsoShow),
+	// by name, or null. When the other boss picks one at random, it's only maybe (e.g.
+	// "Meatball?") until `said` (the special they said) is known; then it's the pick if
+	// that matters, otherwise nothing.
+	function alsoShownName(boss, other, entry, said) {
+		var extras = SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
+		if (!extras.length) { return null; }
+		if (!Array.isArray(entry)) { return optionNames(other.id, extras); }
+		if (said) { return extras.indexOf(said) != -1 ? displayName(other.id, said) : null; }
+		return optionNames(other.id, extras) + "?";
 	}
 	// The name to show for a boss, in full or short (for tight spaces): the player's own
 	// name if they set one, otherwise the configured name or its first word.
@@ -121,11 +128,11 @@
 				// tank, in the other boss's colour.
 				if (shown.length == 1) {
 					cfg.bosses.forEach(function (other, o) {
-						var extras = o != b ? alsoShown(cfg.bosses[b], step[o]) : [];
-						if (extras.length) {
+						var name = o != b ? alsoShownName(cfg.bosses[b], other, step[o], null) : null;
+						if (name) {
 							var extra = document.createElement("span");
 							extra.className = "extra";
-							extra.textContent = optionNames(other.id, extras);
+							extra.textContent = name;
 							extra.style.color = other.color;
 							cell.appendChild(extra);
 						}
@@ -152,11 +159,16 @@
 	var drawn = { key: null, blink: -1 }; // what's on screen
 	var pick = null; // { used, bossIndex, special }: a random special said, and for which use of its step
 
+	// The random special a boss said in the step just used, or null if not known.
+	function saidPick(bossIndex) {
+		return pick && pick.used === tracker.lastUsed && pick.bossIndex == bossIndex ? pick.special : null;
+	}
+
 	function flashName(bossIndex, entry) {
 		var bossId = cfg.bosses[bossIndex].id;
 		if (!Array.isArray(entry)) { return displayName(bossId, entry); }
-		if (pick && pick.used === tracker.lastUsed && pick.bossIndex == bossIndex) { return displayName(bossId, pick.special); }
-		return "Random";
+		var said = saidPick(bossIndex);
+		return said ? displayName(bossId, said) : "Random";
 	}
 
 	function flashLines(stepIndex) {
@@ -168,8 +180,8 @@
 		// With one boss shown, the other boss's specials that matter to this boss's tank.
 		if (shown.length == 1) {
 			cfg.bosses.forEach(function (other, o) {
-				var extras = o != shown[0] ? alsoShown(cfg.bosses[shown[0]], step[o]) : [];
-				if (extras.length) { lines.push({ text: optionNames(other.id, extras), color: other.color }); }
+				var name = o != shown[0] ? alsoShownName(cfg.bosses[shown[0]], other, step[o], saidPick(o)) : null;
+				if (name) { lines.push({ text: name, color: other.color }); }
 			});
 		}
 		lines.forEach(function (line) { line.text = line.text.toUpperCase(); });
