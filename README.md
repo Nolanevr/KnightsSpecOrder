@@ -10,7 +10,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
-- In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and flashes which one it is (e.g. **MEATBALL**).
+- In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and flashes only his pick on screen (e.g. **MEATBALL**).
 - Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
 - When Lady Karmina Ghrazi says "Just give in. Join us." a new kill has started, and the panel goes back to phase 1, step 1.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
@@ -99,7 +99,7 @@ It works in every phase and follows **Show** in the options:
 - **Lord**: his special.
 - In **phase 3** both bosses' specials always flash.
 
-Lady's and Lord's lines for the same step count as one flash. In phase 5, Lord's third special shows as **RANDOM** beforehand (and while flashing if Lady's Dash line comes first), and changes to the one he picked, e.g. **MEATBALL**, when he says it. With **Lady** shown it's **MEATBALL?** until he says it, then **MEATBALL** if he picked it, or nothing if he picked one of the others. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) don't flash.
+Lady's and Lord's lines for the same step count as one flash. In phase 5, Lord's random special shows nothing beforehand, and only his pick flashes, in blue, when he says it (e.g. **MEATBALL**). With **Lady** shown, her **DASH** in that step still appears beforehand and flashes on her line as normal. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) don't flash.
 
 Alt1 can't see where your character is, so the writing is centred on the game window, a quarter of the window's height above its middle, which is about 10 tiles above your character at the usual zoom (`flashHeight`; the text size is `flashTextSize`). It needs Alt1's **overlay** permission.
 
