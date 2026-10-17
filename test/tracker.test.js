@@ -306,6 +306,31 @@ test("the warning before phase 4's silent first step comes 2 seconds before it",
 	assert.strictEqual(t.warningTime(), due + shippedConfig.warnAfterMs);
 });
 
+test("Lord's new-kill line also starts a new fight", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(2);
+	time = 4000;
+	assert.match(t.handleLine("[21:39:24] . ord Vasily '  hrazi: Are you so hungry for death?"), /Fight started/);
+	assert.strictEqual(t.phase, 0);
+	assert.strictEqual(t.nextSpecial, 0);
+	assert.strictEqual(t.warningTime(), 4000 + shippedConfig.firstWarnAfterMs);
+});
+
+test("both bosses' new-kill lines count once, from the first", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	time = 1000;
+	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");
+	time = 3000;
+	assert.strictEqual(t.handleLine("[21:39:26] . ord Vasily '  hrazi: Are you so hungry for death?"), null);
+	assert.strictEqual(t.warningTime(), 1000 + shippedConfig.firstWarnAfterMs);
+	// The next kill, later on, still starts again.
+	time = 300000;
+	assert.ok(t.handleLine("[21:44:23] . ord Vasily '  hrazi: Are you so hungry for death?"));
+	assert.strictEqual(t.warningTime(), 300000 + shippedConfig.firstWarnAfterMs);
+});
+
 test("old chat lines read again (e.g. after scrolling) don't count twice", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.handleLine("[21:39:24] Lady Karmina Ghrazi: Just give in. Join us.");

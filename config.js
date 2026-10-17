@@ -46,7 +46,12 @@ var BOSS_CONFIG = {
 	// Lines that mean a new kill has started (back to Phase 1, first special).
 	resetLines: [
 		"Just give in. Join us", // Lady Karmina Ghrazi
+		"Are you so hungry for death", // Lord Vasily Ghrazi
 	],
+	// If both bosses' new-kill lines come in, only the first counts: another one within
+	// this many milliseconds, with no special in between, is ignored, so the timing from
+	// the kill start stays.
+	resetWindowMs: 8000,
 
 	// Optional: generic lines that mean "the fight moved to the next phase".
 	// Use this if the same thing is said at every phase change.
