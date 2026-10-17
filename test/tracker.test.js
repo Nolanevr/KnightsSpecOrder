@@ -254,7 +254,7 @@ test("Lady's line at the start of phase 4 beats the timer", () => {
 	assert.strictEqual(t.nextSpecial, 1);
 });
 
-test("the next special shows 10 seconds after the previous one", () => {
+test("the next special shows 18 ticks after the previous one", () => {
 	let time = 0;
 	const t = new SpecTracker(shippedConfig, () => time);
 	assert.strictEqual(t.warningTime(), null, "nothing to go on yet");
@@ -271,13 +271,13 @@ test("the next special shows 10 seconds after the previous one", () => {
 	assert.strictEqual(t.warningTime(), null, "picked by hand: no timing to go on");
 });
 
-test("in phase 5 the next special shows 6 seconds after the previous one", () => {
+test("in phase 5 the next special shows 14 ticks after the previous one", () => {
 	let time = 0;
 	const t = new SpecTracker(shippedConfig, () => time);
 	t.setPhase(4);
 	time = 2000;
 	t.handleLine("[22:00:00] Lady Karmina Ghrazi: SUFFER UNTO ME!");
-	assert.strictEqual(t.warningTime(), 2000 + 6000);
+	assert.strictEqual(t.warningTime(), 2000 + 14 * 600);
 });
 
 test("the first special shows 10 seconds after the kill starts", () => {
