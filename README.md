@@ -6,7 +6,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 
 - Phase 4 has 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
-- 18 game ticks after each special (14 in phase 5), the next one appears in large writing in the middle of the screen, above your character: Lady's in red, Lord's in blue underneath. When its chat line comes in, it flashes. See [Flash](#flash).
+- 18 game ticks after each special (14 in phase 5), the next one appears in large writing in the middle of the screen, below your character: Lady's in red, Lord's in blue underneath. When its chat line comes in, it flashes. See [Flash](#flash).
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
@@ -101,7 +101,7 @@ It works in every phase and follows **Show** in the options:
 
 Lady's and Lord's lines for the same step count as one flash. In phase 5, Lord's random special shows nothing beforehand, and only his pick flashes, in blue, when he says it (e.g. **MEATBALL**). With **Lady** shown, her **DASH** in that step still appears beforehand and flashes on her line as normal. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) don't flash.
 
-Alt1 can't see where your character is, so the writing is centred on the game window, a quarter of the window's height above its middle, which is about 10 tiles above your character at the usual zoom (`flashHeight`; the text size is `flashTextSize`). It needs Alt1's **overlay** permission.
+Alt1 can't see where your character is, so the writing is centred on the game window, starting 15% of the window's height below its middle, which is just below your character at the usual zoom (`flashBelow`; the text size is `flashTextSize`). It needs Alt1's **overlay** permission.
 
 ## Phase marker
 

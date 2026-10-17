@@ -142,11 +142,11 @@ var BOSS_CONFIG = {
 	warningMs: 5000,
 	firstWarnAfterMs: 10 * 1000,
 	// When a special's chat line comes in, its step's specials flash for flashMs.
-	// Both are drawn one line per boss in the boss's colour, centred and this fraction
-	// of the game window's height above its middle, where your character is (about 10
-	// tiles above them).
+	// Both are drawn one line per boss in the boss's colour, centred and starting this
+	// fraction of the game window's height below its middle, where your character is
+	// (so just below them).
 	flashMs: 3000,
-	flashHeight: 0.25,
+	flashBelow: 0.15,
 	flashTextSize: 40,
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common

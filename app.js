@@ -143,7 +143,7 @@
 		specialsEl.replaceChildren.apply(specialsEl, items);
 	}
 
-	// Specials in large writing above the character (the middle of the game window), one
+	// Specials in large writing below the character (the middle of the game window), one
 	// line per boss in the boss's colour: the bosses shown in the panel (with Lady shown,
 	// also Lord's Meatball or Blue Bar in that step; in phase 3 both).
 	//  - The next step's specials appear, steady, warnAfterMs after the previous special
@@ -225,7 +225,7 @@
 	}
 
 	function drawLines(lines, ms) {
-		var x = Math.round(alt1.rsWidth / 2), y = Math.round(alt1.rsHeight * (0.5 - cfg.flashHeight));
+		var x = Math.round(alt1.rsWidth / 2), y = Math.round(alt1.rsHeight * (0.5 + cfg.flashBelow));
 		var lineHeight = Math.round(cfg.flashTextSize * 1.2);
 		alt1.overLaySetGroup(FLASH_GROUP);
 		lines.forEach(function (line, i) {
