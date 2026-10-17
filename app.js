@@ -51,14 +51,11 @@
 	}
 	// The other boss's specials in a step that also matter to a boss's tank (alsoShow),
 	// by name, or null. When the other boss picks one at random, it's only maybe (e.g.
-	// "Meatball?") until `said` (the special they said) is known; then it's the pick if
-	// that matters, otherwise nothing.
-	function alsoShownName(boss, other, entry, said) {
+	// "Meatball?").
+	function alsoShownName(boss, other, entry) {
 		var extras = SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
 		if (!extras.length) { return null; }
-		if (!Array.isArray(entry)) { return optionNames(other.id, extras); }
-		if (said) { return extras.indexOf(said) != -1 ? displayName(other.id, said) : null; }
-		return optionNames(other.id, extras) + "?";
+		return optionNames(other.id, extras) + (Array.isArray(entry) ? "?" : "");
 	}
 	// The name to show for a boss, in full or short (for tight spaces): the player's own
 	// name if they set one, otherwise the configured name or its first word.
@@ -128,7 +125,7 @@
 				// tank, in the other boss's colour.
 				if (shown.length == 1) {
 					cfg.bosses.forEach(function (other, o) {
-						var name = o != b ? alsoShownName(cfg.bosses[b], other, step[o], null) : null;
+						var name = o != b ? alsoShownName(cfg.bosses[b], other, step[o]) : null;
 						if (name) {
 							var extra = document.createElement("span");
 							extra.className = "extra";
@@ -151,40 +148,41 @@
 	// also Lord's Meatball or Blue Bar in that step; in phase 3 both).
 	//  - The next step's specials appear, steady, warnAfterMs after the previous special
 	//    (and the first special of a kill firstWarnAfterMs after it starts), until used.
-	//  - When a special's chat line comes in, its step's specials flash for flashMs. For a
-	//    random pick (Lord in phase 5), the one he said.
+	//  - When a special's chat line comes in, its step's specials flash for flashMs.
+	// A step where a boss picks a special at random (Lord in phase 5) shows only the pick,
+	// flashing when he says it; with just the other boss shown (Lady's tank), that boss's
+	// own special (Dash) also appears beforehand and flashes on its line as normal.
 	var FLASH_GROUP = "kso-flash";
 	var FLASH_MS = 300;
 	var flashing = { lines: null, key: null, start: 0 }; // the flash from the last chat line
 	var drawn = { key: null, blink: -1 }; // what's on screen
-	var pick = null; // { used, bossIndex, special }: a random special said, and for which use of its step
 
-	// The random special a boss said in the step just used, or null if not known.
-	function saidPick(bossIndex) {
-		return pick && pick.used === tracker.lastUsed && pick.bossIndex == bossIndex ? pick.special : null;
+	// Whether a step has a boss picking a special at random (Lord in phase 5).
+	function isRandomStep(step) {
+		return step.some(function (entry) { return Array.isArray(entry); });
 	}
 
-	function flashName(bossIndex, entry) {
-		var bossId = cfg.bosses[bossIndex].id;
-		if (!Array.isArray(entry)) { return displayName(bossId, entry); }
-		var said = saidPick(bossIndex);
-		return said ? displayName(bossId, said) : "Random";
+	function line(bossIndex, text) {
+		return { text: text.toUpperCase(), color: cfg.bosses[bossIndex].color };
 	}
 
 	function flashLines(stepIndex) {
 		var step = tracker.rotation()[stepIndex];
 		var shown = shownBosses(tracker.currentPhase());
-		var lines = shown.map(function (b) {
-			return { text: flashName(b, step[b]), color: cfg.bosses[b].color };
-		});
+		// A random step: only the shown boss's own special, when one boss is shown and it
+		// isn't the one picking at random.
+		if (isRandomStep(step)) {
+			var own = shown.length == 1 && !Array.isArray(step[shown[0]]);
+			return own ? [line(shown[0], entryName(cfg.bosses[shown[0]].id, step[shown[0]]))] : [];
+		}
+		var lines = shown.map(function (b) { return line(b, entryName(cfg.bosses[b].id, step[b])); });
 		// With one boss shown, the other boss's specials that matter to this boss's tank.
 		if (shown.length == 1) {
 			cfg.bosses.forEach(function (other, o) {
-				var name = o != shown[0] ? alsoShownName(cfg.bosses[shown[0]], other, step[o], saidPick(o)) : null;
-				if (name) { lines.push({ text: name, color: other.color }); }
+				var name = o != shown[0] ? alsoShownName(cfg.bosses[shown[0]], other, step[o]) : null;
+				if (name) { lines.push(line(o, name)); }
 			});
 		}
-		lines.forEach(function (line) { line.text = line.text.toUpperCase(); });
 		return lines;
 	}
 
@@ -197,13 +195,12 @@
 	function flashSpecial() {
 		var m = tracker.lastMatch;
 		tracker.lastMatch = null;
-		if (!m) { return; }
-		if (m.random) { pick = { used: tracker.lastUsed, bossIndex: m.bossIndex, special: m.special }; }
-		if (!settings.flash) { return; }
-		var lines = flashLines(m.step);
-		var key = lines.map(function (line) { return line.text; }).join("|");
-		// The other boss's line for the same step: keep flashing, unless it changes the
-		// writing (a random pick that wasn't known yet).
+		if (!m || !settings.flash) { return; }
+		// The random pick on its own, in any view.
+		var lines = m.random ? [line(m.bossIndex, displayName(cfg.bosses[m.bossIndex].id, m.special))] : flashLines(m.step);
+		if (!lines.length) { return; }
+		var key = lines.map(function (l) { return l.text; }).join("|");
+		// The other boss's line for the same step: keep flashing.
 		if (key == flashing.key && Date.now() < flashing.start + cfg.flashMs) { return; }
 		flashing = { lines: lines, key: key, start: Date.now() };
 		updateFlash();
@@ -221,11 +218,10 @@
 		}
 		var at = settings.flash ? tracker.warningTime() : null;
 		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
+		var lines = flashLines(tracker.nextSpecial);
+		if (!lines.length) { return null; }
 		// Once per special: the key changes when the next special does.
-		return {
-			key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial,
-			lines: flashLines(tracker.nextSpecial), start: at, end: at + cfg.warningMs, blink: false,
-		};
+		return { key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial, lines: lines, start: at, end: at + cfg.warningMs, blink: false };
 	}
 
 	function drawLines(lines, ms) {
