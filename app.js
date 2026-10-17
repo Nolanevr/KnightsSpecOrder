@@ -139,14 +139,17 @@
 		specialsEl.replaceChildren.apply(specialsEl, items);
 	}
 
-	// When a special's chat line comes in, the specials of the step just used flash in
-	// large writing above the character (the middle of the game window), one line per
-	// boss in the boss's colour: the bosses shown in the panel (with Lady shown, also
-	// Lord's Meatball or Blue Bar in that step; in phase 3 both). For a random pick (Lord
-	// in phase 5), the one he said.
+	// Specials in large writing above the character (the middle of the game window), one
+	// line per boss in the boss's colour: the bosses shown in the panel (with Lady shown,
+	// also Lord's Meatball or Blue Bar in that step; in phase 3 both).
+	//  - The next step's specials appear, steady, warnAfterMs after the previous special
+	//    (and the first special of a kill firstWarnAfterMs after it starts), until used.
+	//  - When a special's chat line comes in, its step's specials flash for flashMs. For a
+	//    random pick (Lord in phase 5), the one he said.
 	var FLASH_GROUP = "kso-flash";
 	var FLASH_MS = 300;
-	var flashing = { lines: null, key: null, start: 0, shown: -1 };
+	var flashing = { lines: null, key: null, start: 0 }; // the flash from the last chat line
+	var drawn = { key: null, blink: -1 }; // what's on screen
 	var pick = null; // { used, bossIndex, special }: a random special said, and for which use of its step
 
 	function flashName(bossIndex, entry) {
@@ -174,8 +177,8 @@
 	}
 
 	function stopFlash() {
-		if (flashing.shown >= 0 && inAlt1) { alt1.overLayClearGroup(FLASH_GROUP); }
-		flashing = { lines: null, key: null, start: 0, shown: -1 };
+		flashing = { lines: null, key: null, start: 0 };
+		updateFlash();
 	}
 
 	// After a chat line was recognised.
@@ -190,8 +193,7 @@
 		// The other boss's line for the same step: keep flashing, unless it changes the
 		// writing (a random pick that wasn't known yet).
 		if (key == flashing.key && Date.now() < flashing.start + cfg.flashMs) { return; }
-		stopFlash();
-		flashing = { lines: lines, key: key, start: Date.now(), shown: -1 };
+		flashing = { lines: lines, key: key, start: Date.now() };
 		updateFlash();
 	}
 
@@ -200,22 +202,50 @@
 		return A1lib.mixColor(n >> 16, (n >> 8) & 255, n & 255);
 	}
 
-	function updateFlash() {
-		if (!flashing.lines || !inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
-		var now = Date.now();
-		if (now >= flashing.start + cfg.flashMs) { stopFlash(); return; }
-		// Shown for one FLASH_MS, hidden for the next.
-		var n = Math.floor((now - flashing.start) / FLASH_MS);
-		if (n == flashing.shown) { return; }
-		flashing.shown = n;
-		if (n % 2) { return; }
+	// What should be on screen now: { key, lines, start, end, blink }, or null.
+	function currentDisplay(now) {
+		if (flashing.lines && now < flashing.start + cfg.flashMs) {
+			return { key: "flash|" + flashing.start, lines: flashing.lines, start: flashing.start, end: flashing.start + cfg.flashMs, blink: true };
+		}
+		var at = settings.flash ? tracker.warningTime() : null;
+		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
+		// Once per special: the key changes when the next special does.
+		return {
+			key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial,
+			lines: flashLines(tracker.nextSpecial), start: at, end: at + cfg.warningMs, blink: false,
+		};
+	}
+
+	function drawLines(lines, ms) {
 		var x = Math.round(alt1.rsWidth / 2), y = Math.round(alt1.rsHeight * (0.5 - cfg.flashHeight));
 		var lineHeight = Math.round(cfg.flashTextSize * 1.2);
 		alt1.overLaySetGroup(FLASH_GROUP);
-		flashing.lines.forEach(function (line, i) {
-			alt1.overLayTextEx(line.text, hexColor(line.color), cfg.flashTextSize, x, y + i * lineHeight, FLASH_MS, "", true, true);
+		lines.forEach(function (line, i) {
+			alt1.overLayTextEx(line.text, hexColor(line.color), cfg.flashTextSize, x, y + i * lineHeight, ms, "", true, true);
 		});
 		alt1.overLaySetGroup("");
+	}
+
+	function updateFlash() {
+		if (!inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
+		var now = Date.now();
+		var show = currentDisplay(now);
+		var key = show ? show.key : null;
+		if (key != drawn.key) {
+			if (drawn.key != null) { alt1.overLayClearGroup(FLASH_GROUP); }
+			drawn = { key: key, blink: -1 };
+		}
+		if (!show) { return; }
+		// Steady: drawn once, for as long as it lasts.
+		if (!show.blink) {
+			if (drawn.blink < 0) { drawLines(show.lines, show.end - now); drawn.blink = 0; }
+			return;
+		}
+		// Flashing: shown for one FLASH_MS, hidden for the next.
+		var n = Math.floor((now - show.start) / FLASH_MS);
+		if (n == drawn.blink) { return; }
+		drawn.blink = n;
+		if (n % 2 == 0) { drawLines(show.lines, FLASH_MS); }
 	}
 
 	function setStatus(text, type) {

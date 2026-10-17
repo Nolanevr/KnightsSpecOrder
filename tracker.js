@@ -60,6 +60,8 @@
 		this.nextSpecial = 0;
 		this.lastUsed = null;
 		this.phaseStartTime = null;
+		// When the kill started (Lady's new-kill line), or null if not known.
+		this.fightStartTime = null;
 		// The last special recognised: { bossIndex, special, step, random }, where random
 		// means it was one boss's random pick for that step.
 		this.lastMatch = null;
@@ -142,6 +144,24 @@
 		return "Step " + (index + 1) + " (" + stepLabel(this.rotation()[index]) + ") has no chat line, assumed used";
 	};
 
+	// When to show that the next special is coming: warnAfterMs (the phase's own, if it
+	// has one) after the previous special; in a phase that opens with a silent step, the
+	// same time before that step is due; and for the first special of a kill,
+	// firstWarnAfterMs after the kill started. Null when there's nothing to go on.
+	SpecTracker.prototype.warningTime = function () {
+		var cfg = this.config, last = this.lastUsed, phase = this.currentPhase();
+		var warnAfter = phase.warnAfterMs || cfg.warnAfterMs, startDelay = phase.silentStartDelayMs;
+		if (!warnAfter) { return null; }
+		if (last) { return last.time + warnAfter; }
+		if (this.phaseStartTime != null && startDelay && cfg.silentStepDelayMs) {
+			return this.phaseStartTime + startDelay - (cfg.silentStepDelayMs - warnAfter);
+		}
+		if (this.fightStartTime != null && this.phase == 0 && cfg.firstWarnAfterMs) {
+			return this.fightStartTime + cfg.firstWarnAfterMs;
+		}
+		return null;
+	};
+
 	SpecTracker.prototype.cooledDown = function (key) {
 		var t = this.now();
 		var cooldown = this.config.triggerCooldownMs || 0;
@@ -194,6 +214,7 @@
 		if (matchesAny(line, cfg.resetLines)) {
 			if (!this.isNew(time, "reset")) { return null; }
 			this.reset();
+			this.fightStartTime = this.now();
 			return "Fight started";
 		}
 
