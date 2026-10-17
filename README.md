@@ -6,7 +6,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 
 - Phase 4 has 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
-- 18 game ticks after each special (14 in phase 5), the next one appears in large bold writing about 4 tiles below your character: Lady's in red, Lord's in blue underneath. It stays until its chat line comes in, and for 3 seconds after. See [On-screen specials](#on-screen-specials).
+- 18 game ticks after each special (14 in phase 5), the next one appears in large bold writing about 4 tiles below your character: Lady's in red, Lord's in blue underneath. It stays until its chat line comes in, then flashes between white and its colour for 3 seconds. See [On-screen specials](#on-screen-specials).
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
@@ -42,6 +42,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
   - **Boss names: Show / Hide, colour the text**: hide the boss names over the columns and colour each special in its boss's colour instead (red for Lady, blue for Lord).
   - **Show specials on screen**: show each special shortly before it and when its chat line comes in (on by default).
   - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
+  - **Move on-screen text…**: point the mouse in the game where the on-screen specials should go and press **Alt+1** to save it there. **Reset** puts them back below your character.
   - **Rename bosses and specials…**: type your own name for either boss or any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
 - **Tools** (at the bottom):
@@ -90,7 +91,7 @@ Turn on **Markers** to check what it sees: a large square with a white border ov
 The specials are written on screen in bold, one line per boss in the boss's colour: Lady's in red, Lord's in blue underneath.
 
 - **Before a special**: the next step's specials appear (steady) 18 game ticks (10.8 seconds) after the previous special (`warnAfterMs` in [`config.js`](config.js)). In phase 5 there are only 3 auto-attacks between specials, so it's 14 ticks (8.4 seconds, the phase's own `warnAfterMs`). The first special of a kill appears 10 seconds after the new-kill line, Lady's "Just give in. Join us." or Lord's "Are you so hungry for death?" (`firstWarnAfterMs`), and phase 4's first one 1.2 seconds before its silent Magic Bleed + Blue Bar step. They stay until the special is used, for at most 5 seconds (`warningMs`).
-- **When its chat line comes in**: the step's specials show for 3 seconds more (`flashMs`). The writing is steady; it doesn't flash.
+- **When its chat line comes in**: the step's specials flash between white and their colour for 3 seconds (`flashMs`).
 
 It works in every phase and follows **Show** in the options:
 
@@ -101,7 +102,9 @@ It works in every phase and follows **Show** in the options:
 
 Lady's and Lord's lines for the same step count once. In phase 5, Lord's random special shows nothing beforehand, and only his pick shows, in blue, when he says it (e.g. **MEATBALL**). With **Lady** shown, her **DASH** in that step still appears beforehand and on her line as normal. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) only show beforehand.
 
-Alt1 can't see where your character is, so the writing is centred on the game window, starting 10% of the window's height below its middle, which is about 4 tiles below your character at the usual zoom (`flashBelow`; the text size is `flashTextSize`, and `flashBold` makes it bold by drawing it twice, 1 pixel apart). It needs Alt1's **overlay** permission.
+To put the writing somewhere else, use **⚙ → Move on-screen text…**: sample text shows where it is now; point the mouse where it should go and press **Alt+1**. The spot is saved as a fraction of the game window, so it stays in place if the window is resized. **Reset** puts it back.
+
+By default, as Alt1 can't see where your character is, the writing is centred on the game window, starting 10% of the window's height below its middle, which is about 4 tiles below your character at the usual zoom (`flashBelow`; the text size is `flashTextSize`, and `flashBold` makes it bold by drawing it twice, 1 pixel apart). It needs Alt1's **overlay** permission.
 
 ## Phase marker
 

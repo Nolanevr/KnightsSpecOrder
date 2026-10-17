@@ -91,10 +91,10 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 .seg button { white-space: nowrap; }
 .seg button { padding: 1px 5px; font-size: 11px; }
 .seg button + button { border-left: none; }
-#btn-rename { font-size: 11px; padding: 1px 6px; }
+#btn-rename, #btn-move { font-size: 11px; padding: 1px 6px; }
 
-/* Rename panel: covers the window, scrolls if the window is short. */
-#rename {
+/* Rename and move panels: cover the window, scroll if the window is short. */
+#rename, #move {
 	position: fixed;
 	inset: 0;
 	z-index: 20;
