@@ -54,7 +54,8 @@ var BOSS_CONFIG = {
 	nextPhaseLines: [],
 
 	// Each phase's special order. Every entry is [Lady's special, Lord's special],
-	// used at the same time. The order repeats once it reaches the end.
+	// used at the same time. The order repeats once it reaches the end. A list of
+	// specials in place of one means the boss uses one of them at random.
 	phases: [
 		{
 			name: "Phase 1",
@@ -111,10 +112,8 @@ var BOSS_CONFIG = {
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
-				["Dash", "Meatball"],
-				["Magic Bleed", "Blue Bar"],
-				["5 Prayers", "5 Prayers"],
-				["Dash", "Blood Waves"],
+				// Lord picks one of these at random; it flashes on screen when he says it.
+				["Dash", ["Blood Waves", "Blood Diamond", "Mind Flay"]],
 			],
 		},
 	],
@@ -139,6 +138,8 @@ var BOSS_CONFIG = {
 	// above its middle, where your character is (about 10 tiles above them).
 	warningHeight: 0.25,
 	warningTextSize: 40,
+	// How long a boss's random special (Lord's in phase 5) flashes when it's said.
+	randomFlashMs: 3000,
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.

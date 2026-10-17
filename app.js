@@ -33,12 +33,26 @@
 	//  bossNames: the player's own names for the bosses, as { bossId: name }
 	//  headers: "show" the boss names over the columns, or "tint" to hide them and colour
 	//           each special's text in its boss's colour instead
-	//  warning: flash the next special on screen shortly before it happens
+	//  warning: flash the next special on screen shortly before it happens, and a
+	//           boss's random special when it's used
 	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", warning: true };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
 		return (settings.names[bossId] || {})[special] || special;
+	}
+	// The name to show for a boss's half of a step: its special, or "Random" when it picks
+	// one at random (which one flashes on screen when it's said).
+	function entryName(bossId, entry) {
+		return Array.isArray(entry) ? "Random" : displayName(bossId, entry);
+	}
+	// The specials a boss's half of a step can be, by name.
+	function optionNames(bossId, entry) {
+		return SpecTracker.options(entry).map(function (s) { return displayName(bossId, s); }).join(" / ");
+	}
+	// The other boss's specials in a step that also matter to a boss's tank (alsoShow).
+	function alsoShown(boss, entry) {
+		return SpecTracker.options(entry).filter(function (s) { return (boss.alsoShow || []).indexOf(s) != -1; });
 	}
 	// The name to show for a boss, in full or short (for tight spaces): the player's own
 	// name if they set one, otherwise the configured name or its first word.
@@ -100,17 +114,19 @@
 				var cell = document.createElement("span");
 				cell.className = "cell";
 				var own = document.createElement("span");
-				own.textContent = displayName(cfg.bosses[b].id, step[b]);
+				own.textContent = entryName(cfg.bosses[b].id, step[b]);
+				if (Array.isArray(step[b])) { own.title = "One of: " + optionNames(cfg.bosses[b].id, step[b]); }
 				if (tint) { own.style.color = cfg.bosses[b].color; }
 				cell.appendChild(own);
 				// With one boss shown, add the other boss's specials that matter to this boss's
 				// tank, in the other boss's colour.
 				if (shown.length == 1) {
 					cfg.bosses.forEach(function (other, o) {
-						if (o != b && (cfg.bosses[b].alsoShow || []).indexOf(step[o]) != -1) {
+						var extras = o != b ? alsoShown(cfg.bosses[b], step[o]) : [];
+						if (extras.length) {
 							var extra = document.createElement("span");
 							extra.className = "extra";
-							extra.textContent = displayName(other.id, step[o]);
+							extra.textContent = optionNames(other.id, extras);
 							extra.style.color = other.color;
 							cell.appendChild(extra);
 						}
@@ -124,57 +140,68 @@
 		specialsEl.replaceChildren.apply(specialsEl, items);
 	}
 
-	// The warning before each special: the next step's specials, flashing in large red
-	// text above the character (the middle of the game window) from warnAfterMs after
-	// the previous special until it's used, for at most warningMs.
-	var WARNING_GROUP = "kso-warning";
-	var WARNING_FLASH_MS = 300;
-	var warning = { key: null, start: 0, flash: -1 };
+	// Large red writing flashed above the character (the middle of the game window):
+	//  - the warning before each special: the next step's specials, from warnAfterMs after
+	//    the previous special until it's used, for at most warningMs;
+	//  - a boss's random special (Lord's in phase 5) when its line is said, for
+	//    randomFlashMs. This one takes over from the warning.
+	var FLASH_GROUP = "kso-warning";
+	var FLASH_MS = 300;
+	var flashing = { key: null, shown: -1 };
+	var announcement = null; // { text, start }
 
 	function warningText() {
 		var step = tracker.rotation()[tracker.nextSpecial];
 		var shown = shownBosses(tracker.currentPhase());
-		var names = shown.map(function (b) { return displayName(cfg.bosses[b].id, step[b]); });
+		var names = shown.map(function (b) { return entryName(cfg.bosses[b].id, step[b]); });
 		// With one boss shown, the other boss's specials that matter to this boss's tank.
 		if (shown.length == 1) {
 			cfg.bosses.forEach(function (other, o) {
-				if (o != shown[0] && (cfg.bosses[shown[0]].alsoShow || []).indexOf(step[o]) != -1) {
-					names.push(displayName(other.id, step[o]));
-				}
+				var extras = o != shown[0] ? alsoShown(cfg.bosses[shown[0]], step[o]) : [];
+				if (extras.length) { names.push(optionNames(other.id, extras)); }
 			});
 		}
 		return names.join(" + ").toUpperCase();
 	}
 
-	function stopWarning() {
-		if (warning.flash >= 0) { alt1.overLayClearGroup(WARNING_GROUP); }
-		warning.flash = -1;
+	// After a chat line was recognised: flash a boss's random special.
+	function announceRandom() {
+		var m = tracker.lastMatch;
+		tracker.lastMatch = null;
+		if (!m || !m.random || !settings.warning) { return; }
+		announcement = { text: displayName(cfg.bosses[m.bossIndex].id, m.special).toUpperCase(), start: Date.now() };
 	}
 
-	function updateWarning() {
-		if (!inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
+	// What should be flashing now, or null.
+	function currentFlash(now) {
+		if (announcement && now < announcement.start + cfg.randomFlashMs) {
+			return { key: "random|" + announcement.start, text: announcement.text, start: announcement.start };
+		}
 		var at = settings.warning ? tracker.warningTime() : null;
+		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
+		// Once per special: the key changes when the next special does.
+		return { key: "warning|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial, text: warningText(), start: at };
+	}
+
+	function updateFlash() {
+		if (!inAlt1 || !alt1.permissionOverlay || !alt1.rsLinked) { return; }
 		var now = Date.now();
-		// A new warning, once per special (the key changes when the next special does).
-		var key = at == null ? null : at + "|" + tracker.phase + "|" + tracker.nextSpecial;
-		if (key != warning.key) {
-			stopWarning();
-			warning.key = key;
-			warning.start = at;
+		var flash = currentFlash(now);
+		var key = flash ? flash.key : null;
+		if (key != flashing.key) {
+			if (flashing.shown >= 0) { alt1.overLayClearGroup(FLASH_GROUP); }
+			flashing = { key: key, shown: -1 };
 		}
-		if (key == null || now < warning.start || now >= warning.start + cfg.warningMs) {
-			stopWarning();
-			return;
-		}
-		// Flash: shown for one WARNING_FLASH_MS, hidden for the next.
-		var flash = Math.floor((now - warning.start) / WARNING_FLASH_MS);
-		if (flash == warning.flash) { return; }
-		warning.flash = flash;
-		if (flash % 2) { return; }
-		alt1.overLaySetGroup(WARNING_GROUP);
-		alt1.overLayTextEx(warningText(), A1lib.mixColor(255, 40, 40), cfg.warningTextSize,
+		if (!flash) { return; }
+		// Shown for one FLASH_MS, hidden for the next.
+		var n = Math.floor((now - flash.start) / FLASH_MS);
+		if (n == flashing.shown) { return; }
+		flashing.shown = n;
+		if (n % 2) { return; }
+		alt1.overLaySetGroup(FLASH_GROUP);
+		alt1.overLayTextEx(flash.text, A1lib.mixColor(255, 40, 40), cfg.warningTextSize,
 			Math.round(alt1.rsWidth / 2), Math.round(alt1.rsHeight * (0.5 - cfg.warningHeight)),
-			WARNING_FLASH_MS, "", true, true);
+			FLASH_MS, "", true, true);
 		alt1.overLaySetGroup("");
 	}
 
@@ -197,6 +224,7 @@
 		if (result) {
 			fightActivity();
 			log(result + "  ←  " + text, true);
+			announceRandom();
 			render();
 		} else if (showChatEl.checked) {
 			log(text);
@@ -498,7 +526,7 @@
 			log(result, true);
 			render();
 		}
-		try { updateWarning(); } catch (e) { console.error(e); }
+		try { updateFlash(); } catch (e) { console.error(e); }
 	}, 100);
 
 	applySettings();

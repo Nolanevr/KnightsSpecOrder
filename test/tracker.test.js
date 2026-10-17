@@ -100,12 +100,43 @@ test("the shared prayer lines count as 5 Prayers in phases 4 and 5", () => {
 	assert.strictEqual(t.nextSpecial, 5);
 });
 
-test("Blood Diamond only counts in phase 3", () => {
+test("Blood Diamond only counts in phases 3 and 5", () => {
 	const t = new SpecTracker(shippedConfig);
 	assert.strictEqual(t.handleLine("[22:00:00] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"), null);
 	t.setPhase(2);
 	assert.ok(t.handleLine("[22:00:05] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"));
 	assert.strictEqual(t.nextSpecial, 0);
+	t.setPhase(4);
+	t.setNextSpecial(0);
+	assert.ok(t.handleLine("[22:00:20] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"));
+	assert.strictEqual(t.nextSpecial, 0);
+});
+
+test("phase 5's third step is Dash and any of Lord's three random specials", () => {
+	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["Your mind betrays you", "Mind Flay"]]) {
+		let time = 0;
+		const t = new SpecTracker(shippedConfig, () => time);
+		t.setPhase(4);
+		t.setNextSpecial(2);
+		t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!");
+		assert.strictEqual(t.lastMatch.random, false, "Lady's Dash isn't random");
+		assert.strictEqual(t.nextSpecial, 0);
+		time += 500;
+		assert.match(t.handleLine(`[22:00:00] . ord Vasily '  hrazi: ${line}`), /same step/, special);
+		assert.strictEqual(t.nextSpecial, 0, special);
+		assert.deepStrictEqual(t.lastMatch, { bossIndex: 1, special: special, step: 2, random: true });
+	}
+});
+
+test("Lord's random special on its own moves phase 5 along", () => {
+	const t = new SpecTracker(shippedConfig);
+	t.setPhase(4);
+	t.setNextSpecial(1);
+	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: Your mind betrays you"), /Mind Flay/);
+	assert.strictEqual(t.nextSpecial, 0);
+	assert.strictEqual(t.lastMatch.random, true);
+	// Meatball isn't in phase 5 any more.
+	assert.strictEqual(t.handleLine("[22:00:15] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), null);
 });
 
 test("one boss's line on its own is enough, whichever boss it is", () => {
@@ -158,11 +189,11 @@ test("Lady's line for the Blue Bar step still counts once for her tank", () => {
 	t.setNextSpecial(2);
 	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!"); // step 3
 	time += 12000;
-	t.handleLine("[22:00:12] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 4
-	assert.strictEqual(t.nextSpecial, 4);
+	t.handleLine("[22:00:12] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 1
+	assert.strictEqual(t.nextSpecial, 1);
 	time += 20000;
-	assert.strictEqual(t.tick(), null); // step 5 has lines, so no guessing
-	assert.strictEqual(t.nextSpecial, 4);
+	assert.strictEqual(t.tick(), null); // step 2 has lines, so no guessing
+	assert.strictEqual(t.nextSpecial, 1);
 });
 
 test("a silent step whose line arrives just after the guess isn't counted twice", () => {
@@ -170,13 +201,13 @@ test("a silent step whose line arrives just after the guess isn't counted twice"
 	const t = new SpecTracker(shippedConfig, () => time);
 	t.setPhase(4);
 	t.setNextSpecial(2);
-	t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"); // step 3, Dash + Meatball
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3, Dash + Blood Waves
 	time += 14000;
-	assert.ok(t.tick()); // step 4 (Magic Bleed + Blue Bar) assumed
-	assert.strictEqual(t.nextSpecial, 4);
+	assert.ok(t.tick()); // step 1 (Magic Bleed + Blue Bar) assumed
+	assert.strictEqual(t.nextSpecial, 1);
 	time += 500;
 	assert.match(t.handleLine("[22:00:14] Lady Karmina Ghrazi: Your blood becomes tribute!"), /same step/);
-	assert.strictEqual(t.nextSpecial, 4);
+	assert.strictEqual(t.nextSpecial, 1);
 });
 
 test("phase 4's silent first step is assumed used 22 ticks after the phase starts", () => {
@@ -354,10 +385,11 @@ test("phase 5 carries on from where phase 4 was", () => {
 	useStep(t, "Dash", "Blood Waves");
 	t.handleLine("Entering phase 5");
 	assert.strictEqual(t.phase, 4);
-	assert.strictEqual(t.nextSpecial, 3);
+	assert.strictEqual(t.nextSpecial, 0); // phase 4's step 4 (Magic Bleed) is phase 5's step 1
 	useStep(t, "Magic Bleed", "Blue Bar");
 	useStep(t, "5 Prayers", "5 Prayers");
-	useStep(t, "Dash", "Blood Waves");
+	assert.strictEqual(t.nextSpecial, 2);
+	useStep(t, "Dash", "Mind Flay");
 	assert.strictEqual(t.nextSpecial, 0);
 });
 
@@ -388,7 +420,11 @@ test("the shipped config is well formed", () => {
 	for (const phase of cfg.phases) {
 		for (const step of phase.rotation) {
 			assert.strictEqual(step.length, cfg.bosses.length, phase.name);
-			step.forEach((special, b) => assert.ok(special in cfg.specialLines[cfg.bosses[b].id], `${phase.name}: ${special}`));
+			step.forEach((entry, b) => {
+				for (const special of SpecTracker.options(entry)) {
+					assert.ok(special in cfg.specialLines[cfg.bosses[b].id], `${phase.name}: ${special}`);
+				}
+			});
 		}
 	}
 	new SpecTracker(cfg).handleLine("anything");
