@@ -116,7 +116,7 @@ var BOSS_CONFIG = {
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
-				// Lord picks one of these at random; it flashes on screen when he says it.
+				// Lord picks one of these at random; it shows on screen when he says it.
 				["Dash", ["Blood Waves", "Blood Diamond", "Meatball"]],
 			],
 		},
@@ -141,13 +141,14 @@ var BOSS_CONFIG = {
 	warnAfterMs: 18 * 600,
 	warningMs: 5000,
 	firstWarnAfterMs: 10 * 1000,
-	// When a special's chat line comes in, its step's specials flash for flashMs.
+	// When a special's chat line comes in, its step's specials show for flashMs.
 	// Both are drawn one line per boss in the boss's colour, centred and starting this
 	// fraction of the game window's height below its middle, where your character is
-	// (so just below them).
+	// (about 4 tiles below them), in bold.
 	flashMs: 3000,
-	flashBelow: 0.15,
+	flashBelow: 0.1,
 	flashTextSize: 40,
+	flashBold: true,
 
 	// Extra chat text colours to read, as [r, g, b]. Alt1 already reads the common
 	// chat colours; only add one here if the boss lines aren't being picked up.
