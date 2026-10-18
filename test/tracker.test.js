@@ -112,27 +112,39 @@ test("Blood Diamond only counts in phases 3 and 5", () => {
 	assert.strictEqual(t.nextSpecial, 0);
 });
 
-test("phase 5's third step is Dash and any of Lord's three random specials", () => {
-	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"], ["BEAR THE CRIMSON MARK!", "Meatball"]]) {
+test("phase 5's third step is always Dash + Meatball", () => {
+	let time = 0;
+	const t = new SpecTracker(shippedConfig, () => time);
+	t.setPhase(4);
+	t.setNextSpecial(2);
+	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!");
+	assert.strictEqual(t.nextSpecial, 3);
+	time += 500;
+	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), /same step/);
+	assert.deepStrictEqual(t.lastMatch, { bossIndex: 1, special: "Meatball", step: 2, random: false });
+});
+
+test("phase 5's sixth step is Dash and Lord's random Blood Waves or Blood Diamond", () => {
+	for (const [line, special] of [["Drown in Blood!", "Blood Waves"], ["LET THE SANGUINE ENGULF YOU", "Blood Diamond"]]) {
 		let time = 0;
 		const t = new SpecTracker(shippedConfig, () => time);
 		t.setPhase(4);
-		t.setNextSpecial(2);
+		t.setNextSpecial(5);
 		t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!");
 		assert.strictEqual(t.lastMatch.random, false, "Lady's Dash isn't random");
 		assert.strictEqual(t.nextSpecial, 0);
 		time += 500;
 		assert.match(t.handleLine(`[22:00:00] . ord Vasily '  hrazi: ${line}`), /same step/, special);
 		assert.strictEqual(t.nextSpecial, 0, special);
-		assert.deepStrictEqual(t.lastMatch, { bossIndex: 1, special: special, step: 2, random: true });
+		assert.deepStrictEqual(t.lastMatch, { bossIndex: 1, special: special, step: 5, random: true });
 	}
 });
 
 test("Lord's random special on its own moves phase 5 along", () => {
 	const t = new SpecTracker(shippedConfig);
 	t.setPhase(4);
-	t.setNextSpecial(1);
-	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"), /Meatball/);
+	t.setNextSpecial(4);
+	assert.match(t.handleLine("[22:00:00] . ord Vasily '  hrazi: LET THE SANGUINE ENGULF YOU"), /Blood Diamond/);
 	assert.strictEqual(t.nextSpecial, 0);
 	assert.strictEqual(t.lastMatch.random, true);
 	// Mind Flay isn't in phase 5.
@@ -187,13 +199,13 @@ test("in phase 5 the silent Blue Bar step is assumed used 20 ticks after the pre
 	const t = new SpecTracker(shippedConfig, () => time);
 	t.setPhase(4);
 	t.setNextSpecial(2);
-	t.handleLine("[22:00:00] . ord Vasily '  hrazi: Drown in Blood!"); // step 3
-	assert.strictEqual(t.nextSpecial, 0); // Magic Bleed + Blue Bar
+	t.handleLine("[22:00:00] . ord Vasily '  hrazi: BEAR THE CRIMSON MARK!"); // step 3
+	assert.strictEqual(t.nextSpecial, 3); // step 4: Magic Bleed + Blue Bar
 	time += 13500; // 20 ticks (12s), plus grace
 	assert.strictEqual(t.tick(), null);
 	time += 500;
-	assert.match(t.tick(), /Step 1/);
-	assert.strictEqual(t.nextSpecial, 1);
+	assert.match(t.tick(), /Step 4/);
+	assert.strictEqual(t.nextSpecial, 4);
 });
 
 test("Lady's line for the Blue Bar step still counts once for her tank", () => {
@@ -203,11 +215,11 @@ test("Lady's line for the Blue Bar step still counts once for her tank", () => {
 	t.setNextSpecial(2);
 	t.handleLine("[22:00:00] Lady Karmina Ghrazi: Nowhere is beyond our reach!"); // step 3
 	time += 12000;
-	t.handleLine("[22:00:12] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 1
-	assert.strictEqual(t.nextSpecial, 1);
+	t.handleLine("[22:00:12] Lady Karmina Ghrazi: Your blood becomes tribute!"); // step 4
+	assert.strictEqual(t.nextSpecial, 4);
 	time += 20000;
-	assert.strictEqual(t.tick(), null); // step 2 has lines, so no guessing
-	assert.strictEqual(t.nextSpecial, 1);
+	assert.strictEqual(t.tick(), null); // step 5 has lines, so no guessing
+	assert.strictEqual(t.nextSpecial, 4);
 });
 
 test("a silent step whose line arrives just after the guess isn't counted twice", () => {
@@ -446,12 +458,15 @@ test("phase 5 carries on from where phase 4 was", () => {
 	useStep(t, "Dash", "Blood Waves");
 	t.handleLine("Entering phase 5");
 	assert.strictEqual(t.phase, 4);
-	assert.strictEqual(t.nextSpecial, 0); // phase 4's step 4 (Magic Bleed) is phase 5's step 1
+	assert.strictEqual(t.nextSpecial, 3);
 	useStep(t, "Magic Bleed", "Blue Bar");
 	useStep(t, "5 Prayers", "5 Prayers");
-	assert.strictEqual(t.nextSpecial, 2);
-	useStep(t, "Dash", "Meatball");
+	useStep(t, "Dash", "Blood Diamond");
 	assert.strictEqual(t.nextSpecial, 0);
+	useStep(t, "Magic Bleed", "Blue Bar");
+	useStep(t, "5 Prayers", "5 Prayers");
+	useStep(t, "Dash", "Meatball");
+	assert.strictEqual(t.nextSpecial, 3);
 });
 
 test("specials that aren't in the current phase are ignored", () => {

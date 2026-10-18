@@ -121,8 +121,11 @@ var BOSS_CONFIG = {
 			rotation: [
 				["Magic Bleed", "Blue Bar"],
 				["5 Prayers", "5 Prayers"],
+				["Dash", "Meatball"],
+				["Magic Bleed", "Blue Bar"],
+				["5 Prayers", "5 Prayers"],
 				// Lord picks one of these at random; it shows on screen when he says it.
-				["Dash", ["Blood Waves", "Blood Diamond", "Meatball"]],
+				["Dash", ["Blood Waves", "Blood Diamond"]],
 			],
 		},
 	],

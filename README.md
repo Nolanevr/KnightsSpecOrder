@@ -4,14 +4,14 @@ An [Alt1 Toolkit](https://runeapps.org/alt1) app that reads the RuneScape chatbo
 
 There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows which protection prayers to use for the Rapid Attack droplets coming at you.
 
-- Phase 4 has 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
+- Phases 4 and 5 have 6 steps. The ⚙ options pick how they're shown: **Ultra compact** (the default: 6 half-height rows in the space of 3, so the window stays the same size in every phase), **Side by side** (steps 1–3 and 4–6 next to each other, also 3 rows high) or **Standard** (6 full-size rows; the window needs to be taller).
 - Shows the current phase's special order. Each row is one step: Lady's special (melee, red header) and Lord's special (magic, blue header), used at the same time. The next step is highlighted in green.
 - 18 game ticks after each special (14 in phase 5), the next one appears in large bold writing about 4 tiles below your character: Lady's in red, Lord's in blue underneath. It stays until its chat line comes in, then flashes between white and its colour for 3 seconds. See [On-screen specials](#on-screen-specials).
 - When either boss yells a special's chat line, the highlight moves to the next step. Lady's and Lord's lines for the same step count once, and in phase 3 a line from just one of them is enough.
 - When a phase-change line is yelled, the panel switches to the next phase and the order **carries over**: if 2 steps were used in phase 1, step 3 is next in phase 2.
 - Entering **phase 4** always resets to step 1. Phase 5 carries on from wherever phase 4 was.
-- In phase 5, Lord's third special is a random one of Blood Waves, Blood Diamond and Meatball. The panel shows it as **Random** (and as **Meatball?** with Lady shown); when he says its line, the app counts it and shows only his pick on screen (e.g. **MEATBALL**).
-- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 step 1) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
+- In phase 5, Lord's third special is always Meatball and his sixth is a random one of Blood Waves and Blood Diamond. The panel shows the sixth as **Random**; when he says its line, the app counts it and shows only his pick on screen (e.g. **BLOOD DIAMOND**).
+- Blue Bar has no chat line, and Lady's lines only show for her tank, so for Lord's tank the Magic Bleed + Blue Bar steps (phase 4 step 1, phase 5 steps 1 and 4) are silent. Blue Bar comes 24 game ticks (14.4 seconds) after the previous special in phase 4 and 20 ticks (12 seconds) in phase 5, and phase 4's first one comes 22 ticks after the marker turns to Phase 4, so once that has passed (plus 3 ticks of grace) without a line, the app assumes it happened and moves on.
 - When Lady Karmina Ghrazi says "Just give in. Join us." or Lord Vasily Ghrazi says "Are you so hungry for death?", a new kill has started, and the panel goes back to phase 1, step 1. If both are said, only the first counts.
 - Phase changes are also read from the boss bar's **"Phase: N"** box on screen (phase 3 has no chat line). See [Phase marker](#phase-marker).
 
@@ -21,7 +21,7 @@ There is also a [Bolt plugin](#bolt-plugin-rapid-attack-prayers) that shows whic
 | 2 | 3 Prayers + 3 Prayers → Dash + Mind Flay → Magic Bleed + Blood Waves |
 | 3 | 3 Prayers + 3 Prayers → Dash + Blood Waves → Magic Bleed + Blood Diamond |
 | 4 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Blood Waves → Magic Bleed + Meatball → 5 Prayers + 5 Prayers → Dash + Blood Waves |
-| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Random (Blood Waves, Blood Diamond or Meatball) |
+| 5 | Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Meatball → Magic Bleed + Blue Bar → 5 Prayers + 5 Prayers → Dash + Random (Blood Waves or Blood Diamond) |
 
 ## Installing in Alt1
 
@@ -101,7 +101,7 @@ It works in every phase and follows **Show** in the options:
 - **Lord**: his special.
 - In **phase 3** both bosses' specials always show.
 
-Lady's and Lord's lines for the same step count once. In phase 5, Lord's random special shows nothing beforehand, and only his pick shows, in blue, when he says it (e.g. **MEATBALL**). With **Lady** shown, her **DASH** in that step still appears beforehand and on her line as normal. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) only show beforehand.
+Lady's and Lord's lines for the same step count once. In phase 5, Lord's random sixth special shows nothing beforehand, and only his pick shows, in blue, when he says it (e.g. **BLOOD WAVES**). With **Lady** shown, her **DASH** in that step still appears beforehand and on her line as normal. His third special, always Meatball, shows like any other. Renamed specials use your names. Steps with no chat line (Blue Bar for Lord's tank) only show beforehand.
 
 To put the writing somewhere else, use **⚙ → Move on-screen text…**: sample text shows where it is now; point the mouse where it should go and press **Alt+1**. The spot is saved as a fraction of the game window, so it stays in place if the window is resized. **Reset** puts it back.
 
@@ -120,7 +120,7 @@ The marker is matched against the default interface scaling; with a different sc
 All boss data is in [`config.js`](config.js).
 
 - `specialLines`: what each boss yells for each special. Fill these in once; they're used in every phase. Leave the speaker's name out: it's drawn in a dark colour that's harder for Alt1 to read than the message.
-- `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs. A list of specials in place of one, like Lord's `["Blood Waves", "Blood Diamond", "Meatball"]` in phase 5, means the boss picks one at random; any of their lines counts, and the one said shows on screen.
+- `phases[].rotation`: each phase's order, as `[Lady's special, Lord's special]` pairs. A list of specials in place of one, like Lord's `["Blood Waves", "Blood Diamond"]` in phase 5, means the boss picks one at random; any of their lines counts, and the one said shows on screen.
 
 Also fill in each phase's `phaseLines`: what is yelled when the fight enters that phase. If the same thing is said at every phase change, put it in `nextPhaseLines` instead.
 
