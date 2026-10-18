@@ -42,6 +42,7 @@ The app is a static web page, so it has to be hosted somewhere Alt1 can load it.
   - **Boss names: Show / Hide, colour the text**: hide the boss names over the columns and colour each special in its boss's colour instead (red for Lady, blue for Lord).
   - **Show specials on screen**: show each special shortly before it and when its chat line comes in (on by default).
   - **Hide buttons, status and tools**: a compact view with just the phase and the specials.
+  - **Text size**: a slider for the size of the on-screen specials. Sample text shows the new size in the game while you move it.
   - **Move on-screen text…**: point the mouse in the game where the on-screen specials should go and press **Alt+1** to save it there. **Reset** puts them back below your character.
   - **Rename bosses and specials…**: type your own name for either boss or any special (per boss); leave a box empty to keep the original name. Only the display changes; the chat lines still match as before.
 - **◀ / ▶** change phase by hand. **Click a row** to make it the next step. **Reset** goes back to phase 1, step 1. **Find chat** locates the chatbox again if you moved it.
@@ -104,7 +105,7 @@ Lady's and Lord's lines for the same step count once. In phase 5, Lord's random 
 
 To put the writing somewhere else, use **⚙ → Move on-screen text…**: sample text shows where it is now; point the mouse where it should go and press **Alt+1**. The spot is saved as a fraction of the game window, so it stays in place if the window is resized. **Reset** puts it back.
 
-By default, as Alt1 can't see where your character is, the writing is centred on the game window, starting 10% of the window's height below its middle, which is about 4 tiles below your character at the usual zoom (`flashBelow`; the text size is `flashTextSize`, and `flashBold` makes it bold by drawing it twice, 1 pixel apart). It needs Alt1's **overlay** permission.
+By default, as Alt1 can't see where your character is, the writing is centred on the game window, starting 10% of the window's height below its middle, which is about 4 tiles below your character at the usual zoom (`flashBelow`; the default text size is `flashTextSize`, changed with the **Text size** slider, and `flashBold` makes it bold by drawing it twice, 1 pixel apart). It needs Alt1's **overlay** permission.
 
 ## Phase marker
 
