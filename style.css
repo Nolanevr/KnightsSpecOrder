@@ -87,6 +87,8 @@ button:disabled { opacity: 0.4; cursor: default; filter: none; }
 }
 .opt-row { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; margin: 3px 0; }
 .opt-row > span { width: 58px; color: var(--muted); }
+#opt-text-size { flex: 1; min-width: 60px; margin: 0; }
+.opt-row > #opt-text-size-value { width: auto; min-width: 18px; color: inherit; }
 .seg { display: flex; flex-wrap: wrap; }
 .seg button { white-space: nowrap; }
 .seg button { padding: 1px 5px; font-size: 11px; }

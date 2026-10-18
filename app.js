@@ -37,7 +37,8 @@
 	//  textPos: where the on-screen specials go, as { fx, fy }: the middle of the first
 	//           line as fractions of the game window's width and height, or null for
 	//           the default (below the character)
-	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", flash: true, textPos: null };
+	//  textSize: the on-screen specials' text size in pixels, or null for flashTextSize
+	var settings = { view: "both", layout: "ultra", compact: false, names: {}, bossNames: {}, headers: "show", flash: true, textPos: null, textSize: null };
 
 	// The name to show for a boss's special: the player's own name if they set one.
 	function displayName(bossId, special) {
@@ -157,6 +158,7 @@
 	// special (Dash) also appears beforehand and on its line as normal.
 	var FLASH_GROUP = "kso-flash";
 	var FLASH_MS = 300; // on a chat line the text swaps between white and its colour this often
+	var TEXT_SIZE_MIN = 16, TEXT_SIZE_MAX = 80;
 	var moving = false; // placing the text with Alt+1
 	var moved = 0; // when the text was last placed, to show it there for a moment
 	var flashing = { lines: null, key: null, start: 0 }; // the flash from the last chat line
@@ -224,7 +226,7 @@
 	// What should be on screen now: { key, lines, end }, or null.
 	function currentDisplay(now) {
 		var pos = textPosition();
-		var where = pos.x + "," + pos.y;
+		var where = pos.x + "," + pos.y + "," + textSize();
 		if (moving) {
 			// Redrawn now and then: overlays can't stay up for ever.
 			return { key: "move|" + where + "|" + Math.floor(now / 20000), lines: sampleLines(), end: now + 21000 };
@@ -236,14 +238,18 @@
 			// Swaps between white and the boss colours.
 			var n = Math.floor((now - flashing.start) / FLASH_MS);
 			var lines = n % 2 ? flashing.lines.map(function (l) { return { text: l.text, color: "#ffffff" }; }) : flashing.lines;
-			return { key: "flash|" + flashing.start + "|" + n, lines: lines, end: Math.min(now + FLASH_MS * 2, flashing.start + cfg.flashMs) };
+			return { key: "flash|" + flashing.start + "|" + n + "|" + where, lines: lines, end: Math.min(now + FLASH_MS * 2, flashing.start + cfg.flashMs) };
 		}
 		var at = settings.flash ? tracker.warningTime() : null;
 		if (at == null || now < at || now >= at + cfg.warningMs) { return null; }
 		lines = flashLines(tracker.nextSpecial);
 		if (!lines.length) { return null; }
 		// Once per special: the key changes when the next special does.
-		return { key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial, lines: lines, end: at + cfg.warningMs };
+		return { key: "next|" + at + "|" + tracker.phase + "|" + tracker.nextSpecial + "|" + where, lines: lines, end: at + cfg.warningMs };
+	}
+
+	function textSize() {
+		return settings.textSize || cfg.flashTextSize;
 	}
 
 	// Where the middle of the first line goes, in game window pixels.
@@ -255,14 +261,14 @@
 
 	function drawLines(lines, ms) {
 		var pos = textPosition(), x = pos.x, y = pos.y;
-		var lineHeight = Math.round(cfg.flashTextSize * 1.2);
+		var size = textSize(), lineHeight = Math.round(size * 1.2);
 		alt1.overLaySetGroup(FLASH_GROUP);
 		lines.forEach(function (line, i) {
 			var color = hexColor(line.color), ly = y + i * lineHeight;
-			alt1.overLayTextEx(line.text, color, cfg.flashTextSize, x, ly, ms, "", true, true);
+			alt1.overLayTextEx(line.text, color, size, x, ly, ms, "", true, true);
 			// Bold: the same text again 1px to the right (without a shadow, which would show
 			// through the first copy).
-			if (cfg.flashBold) { alt1.overLayTextEx(line.text, color, cfg.flashTextSize, x + 1, ly, ms, "", true, false); }
+			if (cfg.flashBold) { alt1.overLayTextEx(line.text, color, size, x + 1, ly, ms, "", true, false); }
 		});
 		alt1.overLaySetGroup("");
 	}
@@ -474,6 +480,8 @@
 		settings.flash = settings.flash !== false;
 		var p = settings.textPos;
 		if (!p || !(p.fx >= 0 && p.fx <= 1 && p.fy >= 0 && p.fy <= 1)) { settings.textPos = null; }
+		var size = settings.textSize;
+		if (!(size >= TEXT_SIZE_MIN && size <= TEXT_SIZE_MAX)) { settings.textSize = null; }
 	}
 	// A row of buttons where one is selected, for a setting.
 	function segmented(container, key, choices) {
@@ -493,6 +501,8 @@
 		});
 		el("opt-compact").checked = settings.compact;
 		el("opt-flash").checked = settings.flash;
+		el("opt-text-size").value = textSize();
+		el("opt-text-size-value").textContent = textSize();
 		[["opt-view", "view"], ["opt-layout", "layout"], ["opt-headers", "headers"]].forEach(function (pair) {
 			Array.prototype.forEach.call(el(pair[0]).children, function (button) {
 				button.classList.toggle("selected", button.dataset.value == settings[pair[1]]);
@@ -567,6 +577,17 @@
 	};
 	el("btn-rename-done").onclick = function () { el("rename").hidden = true; };
 	el("btn-move").onclick = startMoving;
+	// Text size: shows the sample text at the new size while the slider moves.
+	el("opt-text-size").min = TEXT_SIZE_MIN;
+	el("opt-text-size").max = TEXT_SIZE_MAX;
+	el("opt-text-size").oninput = function () {
+		var size = +el("opt-text-size").value;
+		settings.textSize = size == cfg.flashTextSize ? null : size;
+		el("opt-text-size-value").textContent = size;
+		saveSettings();
+		moved = Date.now();
+		updateFlash();
+	};
 	el("btn-move-done").onclick = stopMoving;
 	el("btn-move-reset").onclick = function () { placeText(null); };
 	el("btn-rename-reset").onclick = function () {
